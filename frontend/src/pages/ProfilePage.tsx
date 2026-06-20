@@ -122,7 +122,10 @@ export default function ProfilePage({
     if (!form.name.trim()) { alert("Le nom ne peut pas être vide."); return; }
     if (!matricule.trim()) { alert("L'identifiant ne peut pas être vide."); return; }
     if (password && password !== confirmPassword) { alert("Les mots de passe ne correspondent pas."); return; }
-    onSave({ ...currentUser, name: form.name, email: form.email, matricule });
+    // Inclure le mot de passe uniquement s'il a été saisi (sinon il reste inchangé)
+    onSave({ ...currentUser, name: form.name, email: form.email, matricule, ...(password ? { password } : {}) });
+    setPassword("");
+    setConfirmPassword("");
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
