@@ -1,7 +1,9 @@
 // src/api.ts
 // Client API centralisé — toutes les communications avec le backend
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'https://medwork-cbg-backend-production.up.railway.app') + '/api';
+// URL du backend : définie via la variable d'environnement VITE_API_URL
+// (configurée sur Vercel). En développement local, on cible le backend sur le port 3001.
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001') + '/api';
 
 export function getToken(): string | null {
   return localStorage.getItem("medwork_token");

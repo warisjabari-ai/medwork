@@ -1,0 +1,33 @@
+# render.yaml — Déploiement du backend MedWork sur Render (plan gratuit)
+# Documentation : https://render.com/docs/blueprint-spec
+#
+# Render lit ce fichier pour créer/configurer automatiquement le service.
+# Les variables marquées "sync: false" sont à renseigner manuellement dans le
+# dashboard Render (valeurs secrètes : connexion Supabase, domaines autorisés).
+
+services:
+  - type: web
+    name: medwork-backend
+    runtime: node
+    rootDir: backend          # le code backend est dans le sous-dossier /backend
+    plan: free                # palier gratuit Render
+    region: frankfurt         # région Europe (plus proche de la Guinée que les USA)
+    buildCommand: npm install # déclenche aussi `prisma generate` via postinstall
+    startCommand: npm start   # = prisma migrate deploy && node src/index.js
+    healthCheckPath: /api/health
+    envVars:
+      # Chaîne de connexion PostgreSQL Supabase — à coller dans le dashboard Render
+      - key: DATABASE_URL
+        sync: false
+      # Secret JWT généré automatiquement et de façon sécurisée par Render
+      - key: JWT_SECRET
+        generateValue: true
+      # Durée de validité des sessions
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: NODE_ENV
+        value: production
+      # Domaines frontend autorisés (Vercel) — séparés par des virgules
+      # ex: https://medwork.vercel.app
+      - key: CORS_ORIGINS
+        sync: false

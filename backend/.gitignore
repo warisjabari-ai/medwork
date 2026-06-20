@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Secrets / local config - NEVER commit
+.env
+.env.*
+!.env.example
+
+# Locally uploaded files (dead code, kept for safety)
+uploads/
+
+# Offline backup of old Railway migrations
+_migrations_backup_railway/
+
+# Logs and temp files
+*.log
+_verify.js
+
+# NOTE: prisma/migrations/ MUST be versioned (required for Render deploy)

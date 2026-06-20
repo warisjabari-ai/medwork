@@ -1,0 +1,273 @@
+// prisma/schema.prisma
+// Schéma de base de données pour MédWork CBG
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Rôles utilisateurs ──────────────────────────────────────────────────────
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  color       String   @default("cyan")
+  permissions String[] // tableau de clés de permission
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
+// ─── Utilisateurs ────────────────────────────────────────────────────────────
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  matricule    String   @unique  // identifiant de connexion
+  email        String?
+  passwordHash String
+  roleId       Int
+  active       Boolean  @default(true)
+  isSuperAdmin Boolean  @default(false)
+  signature    String?  // chemin vers l'image de signature
+  photo        String?  // chemin vers la photo de profil
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role         Role     @relation(fields: [roleId], references: [id])
+}
+
+// ─── Travailleurs ────────────────────────────────────────────────────────────
+model Worker {
+  id             Int      @id @default(autoincrement())
+  name           String
+  matricule      String   @unique
+  department     String?
+  position       String?
+  company        String?
+  residence      String?
+  contractStatus String   @default("actif") // actif | embauche | fin_contrat
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  visits         Visit[]
+  antecedents    WorkerAntecedent[]
+  vaccinations   WorkerVaccination[]
+  expositions    WorkerExposition[]
+}
+
+// ─── Types de visite ─────────────────────────────────────────────────────────
+model VisitType {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  periodicity String   @default("Annuelle")
+  mandatory   Boolean  @default(false)
+  examConfig  Json     @default("{}")  // ExamConfig sérialisé
+  editRules   Json     @default("{}")  // Record<roleId, string[]>
+  examTypeIds Int[]    @default([])    // IDs des types d'examens biologiques associés
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Décisions médicales ─────────────────────────────────────────────────────
+model Decision {
+  id                   Int      @id @default(autoincrement())
+  label                String   @unique
+  color                String   @default("green") // green | orange | red | blue
+  description          String?
+  requiresRestriction  Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ─── Visites médicales ───────────────────────────────────────────────────────
+model Visit {
+  id              Int      @id @default(autoincrement())
+  ref             String   @unique  // VIS-AAAA-NNNNN
+  workerId        Int
+  date            String   // JJ/MM/AAAA
+  type            String
+  doctor          String?
+  aptitudeDoctor  String?
+  aptitude        String   @default("Apte")
+  nextVisit       String?
+  note            String?
+  restrictions    String?
+  biology         String?
+  complementaryExams String?
+  recommendations String?
+  closed          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  worker          Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  // Sous-tables pour les données complexes
+  clinicalExam    ClinicalExam?
+  physicalExam    PhysicalExam?
+  functionalEval  FunctionalEval?
+  complaints      Complaint[]
+  diagnoses       Diagnosis[]
+  treatments      Treatment[]
+  examResults     ExamResult[]
+}
+
+// ─── Examen clinique ─────────────────────────────────────────────────────────
+model ClinicalExam {
+  id                Int    @id @default(autoincrement())
+  visitId           Int    @unique
+  weight            String?
+  height            String?
+  bmi               String?
+  temperature       String?
+  bloodPressure     String?
+  pulse             String?
+  respiratoryRate   String?
+
+  visit             Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+// ─── Examen physique ─────────────────────────────────────────────────────────
+model PhysicalExam {
+  id         Int    @id @default(autoincrement())
+  visitId    Int    @unique
+  orl        String?
+  digestive  String?
+  cardiology String?
+  neurology  String?
+  pulmonary  String?
+  uroGenital String?
+  locomotor  String?
+  others     String?
+
+  visit      Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+// ─── Évaluation fonctionnelle ────────────────────────────────────────────────
+model FunctionalEval {
+  id                     Int    @id @default(autoincrement())
+  visitId                Int    @unique
+  ecg                    String?
+  spirometry             String?
+  audiogram              String?
+  hearingProtectionUsed  String?
+  hearingProtectionType  String?
+  colorVisionOD          String?
+  colorVisionOG          String?
+  visualTest             Json?   // TestVisuel sérialisé
+  imaging                Json?   // ImagingExam[] sérialisé
+
+  visit                  Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+// ─── Plaintes ────────────────────────────────────────────────────────────────
+model Complaint {
+  id       Int    @id @default(autoincrement())
+  visitId  Int
+  label    String
+  duration String?
+
+  visit    Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+// ─── Diagnostics ─────────────────────────────────────────────────────────────
+model Diagnosis {
+  id        Int     @id @default(autoincrement())
+  visitId   Int
+  label     String
+  isHistory Boolean @default(false)
+
+  visit     Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+// ─── Traitements / Ordonnances ───────────────────────────────────────────────
+model Treatment {
+  id        Int    @id @default(autoincrement())
+  visitId   Int
+  molecule  String
+  quantity  String?
+  posology  String?
+
+  visit     Visit  @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+// ─── Types d'examens biologiques ─────────────────────────────────────────────
+model ExamType {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  unit        String? @default("")
+  valueType   String  @default("numeric") // numeric | qualitative
+  // Valeurs de référence simples (rétrocompatibilité)
+  normalMin   Float?
+  normalMax   Float?
+  // Intervalles de référence multiples (sexe, âge)
+  // JSON array de { label, sex?, ageMin?, ageMax?, normalMin, normalMax, normalValues }
+  referenceRanges Json? @default("[]")
+  // Pour les examens qualitatifs
+  normalValues Json?
+  possibleValues Json?
+  description String?
+  active      Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  results     ExamResult[]
+}
+
+// ─── Résultats d'examens d'une visite ────────────────────────────────────────
+model ExamResult {
+  id           Int      @id @default(autoincrement())
+  visitId      Int
+  examTypeId   Int
+  value        String?  // Résultat saisi (texte ou nombre)
+  isAbnormal   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  visit        Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  examType     ExamType @relation(fields: [examTypeId], references: [id])
+
+  @@unique([visitId, examTypeId])
+}
+
+model WorkerAntecedent {
+  id        Int     @id @default(autoincrement())
+  workerId  Int
+  label     String
+  type      String  @default("Personnel") // Personnel | Familial | Alerte | À surveiller
+  suivi     String  @default("Suivi")     // Suivi | Non suivi
+  visitRef  String? // Ref de la visite source si ajouté automatiquement
+  visitDate String? // Date de la visite source
+  createdAt DateTime @default(now())
+
+  worker    Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
+
+// ─── Vaccinations ────────────────────────────────────────────────────────────
+model WorkerVaccination {
+  id        Int    @id @default(autoincrement())
+  workerId  Int
+  nom       String
+  dateAdmin String?
+  dateExp   String?
+  createdAt DateTime @default(now())
+
+  worker    Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
+
+// ─── Expositions aux risques ─────────────────────────────────────────────────
+model WorkerExposition {
+  id        Int    @id @default(autoincrement())
+  workerId  Int
+  type      String
+  niveau    String @default("Modéré") // Faible | Modéré | Élevé
+  createdAt DateTime @default(now())
+
+  worker    Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
