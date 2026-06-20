@@ -8,7 +8,7 @@ const DEFAULT_ORG: Organization = {
   name: "MedWork",
   tagline: "La plateforme intelligente de médecine du travail",
   logo: null,
-  primaryColor: "#00aadd",
+  primaryColor: "#0F4C81",
 };
 
 // ─── Génération automatique du thème depuis la couleur principale ─────────────

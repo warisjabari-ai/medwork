@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,25 +6,42 @@
 
 :root {
   /* ─── Couleur d'accent dynamique (générée depuis la couleur de l'entreprise) ───
-     Stockée en canaux RGB ("r g b") pour permettre les opacités Tailwind. */
-  --primary:        0 170 221;
-  --primary-light:  51 191 232;
-  --primary-dark:   0 126 164;
-  --primary-hover:  0 150 195;
-  --primary-bg:     232 247 252;   /* teinte de fond très claire */
-  --primary-border: 179 230 244;
+     Stockée en canaux RGB ("r g b") pour permettre les opacités Tailwind.
+     Valeur par défaut = bleu profond MedWork (#0F4C81). Surchargée par applyTheme(). */
+  --primary:        15 76 129;
+  --primary-light:  59 130 246;   /* bleu vif MedWork #3B82F6 (états actifs) */
+  --primary-dark:   12 60 105;
+  --primary-hover:  13 67 117;
+  --primary-bg:     235 242 250;   /* teinte de fond très claire */
+  --primary-border: 191 214 240;
 
-  /* ─── Neutres (base claire façon Linear/Stripe) ─── */
+  /* ─── Tokens du design (canaux RGB "r g b" → opacités Tailwind possibles) ─── */
+  --brand-deep:    15 76 129;     /* #0F4C81 bleu profond — CTA, logo */
+  --brand-vibrant: 59 130 246;    /* #3B82F6 bleu vif — accents, états actifs */
+
+  --background:        248 250 252;  /* #f8fafc fond gris très clair */
+  --surface:           255 255 255;  /* cartes / barres */
+  --foreground:        30 41 59;     /* #1e293b texte principal */
+  --muted:             241 245 249;  /* #f1f5f9 fonds discrets */
+  --muted-foreground:  100 116 139;  /* #64748b texte secondaire */
+  --accent:            241 245 249;  /* survols discrets */
+  --border:            231 235 240;  /* #e7ebf0 bordures douces */
+  --border-strong:     219 225 232;  /* #dbe1e8 */
+  --ring:              59 130 246;
+
+  --success: 16 185 129;   /* #10b981 */
+  --warning: 245 158 11;   /* #f59e0b */
+  --danger:  239 68 68;    /* #ef4444 */
+
+  /* ─── Conservés pour compat. des pages existantes ─── */
   --navy:       #0c1e30;
   --cyan:       #00aadd;
   --cyan-light: #e8f7fc;
-  --surface:    #f8fafc;   /* slate-50 */
-  --border:     #e2e8f0;   /* slate-200 */
   --border-soft:#eef2f6;
-  --text-1:     #0f172a;   /* slate-900 */
-  --text-2:     #475569;   /* slate-600 */
-  --text-3:     #94a3b8;   /* slate-400 */
-  --text-4:     #cbd5e1;   /* slate-300 */
+  --text-1:     #1e293b;
+  --text-2:     #475569;
+  --text-3:     #94a3b8;
+  --text-4:     #cbd5e1;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,11 +49,17 @@
 html { font-size: 14px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
 body {
-  font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-weight: 400;
-  color: var(--text-1);
-  background: var(--surface);
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
   line-height: 1.5;
+  font-feature-settings: "cv11", "ss01";
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }

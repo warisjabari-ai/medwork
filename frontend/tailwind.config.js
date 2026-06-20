@@ -14,6 +14,21 @@ export default {
           bg:      "rgb(var(--primary-bg) / <alpha-value>)",
           border:  "rgb(var(--primary-border) / <alpha-value>)",
         },
+        // ─── Design system (référence ui-ux-medwork) — canaux RGB + opacités ───
+        "brand-deep":    "rgb(var(--brand-deep) / <alpha-value>)",
+        "brand-vibrant": "rgb(var(--brand-vibrant) / <alpha-value>)",
+        background:      "rgb(var(--background) / <alpha-value>)",
+        surface:         "rgb(var(--surface) / <alpha-value>)",
+        foreground:      "rgb(var(--foreground) / <alpha-value>)",
+        muted:           "rgb(var(--muted) / <alpha-value>)",
+        "muted-foreground": "rgb(var(--muted-foreground) / <alpha-value>)",
+        accent:          "rgb(var(--accent) / <alpha-value>)",
+        border:          "rgb(var(--border) / <alpha-value>)",
+        "border-strong": "rgb(var(--border-strong) / <alpha-value>)",
+        ring:            "rgb(var(--ring) / <alpha-value>)",
+        success:         "rgb(var(--success) / <alpha-value>)",
+        warning:         "rgb(var(--warning) / <alpha-value>)",
+        danger:          "rgb(var(--danger) / <alpha-value>)",
         // Conservés pour compatibilité avec les pages existantes
         "medwork-navy": "#0c1e30",
         "medwork-cyan": "#00aadd",
@@ -22,7 +37,8 @@ export default {
         "medwork-surface": "#f8fafc",
       },
       fontFamily: {
-        sans: ["'Geist'", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["'Inter'", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        display: ["'Plus Jakarta Sans'", "'Inter'", "system-ui", "sans-serif"],
       },
       borderRadius: {
         sm: "6px",
@@ -33,6 +49,8 @@ export default {
         "3xl": "28px",
       },
       boxShadow: {
+        card: "0 1px 2px 0 rgba(15,23,42,0.04), 0 1px 3px 0 rgba(15,23,42,0.04)",
+        elevated: "0 4px 16px -4px rgba(15,23,42,0.10), 0 2px 6px -2px rgba(15,23,42,0.05)",
         xs: "0 1px 3px rgba(15,23,42,0.05), 0 1px 2px rgba(15,23,42,0.04)",
         sm: "0 2px 8px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04)",
         md: "0 4px 16px rgba(15,23,42,0.07), 0 2px 6px rgba(15,23,42,0.04)",

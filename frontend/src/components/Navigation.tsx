@@ -4,6 +4,40 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useOrg } from "../branding";
+import {
+  LayoutDashboard, Users, Stethoscope, BarChart3, ClipboardList,
+  ShieldCheck, FlaskConical, Building2, Shield, UserCog,
+  Search, Bell, ChevronDown, ChevronRight, ChevronLeft, Plus,
+  LogOut, UserRound, type LucideIcon,
+} from "lucide-react";
+
+// ─── Structure de navigation (sections façon ui-ux-medwork) ───────────────────
+// Chaque item est rattaché à une page existante + une permission (string ou liste).
+type NavLeaf = { page: AppPage; icon: LucideIcon; label: string; perm: string | string[] | null };
+type NavSection = { label: string; items: NavLeaf[] };
+
+const NAV_SECTIONS: NavSection[] = [
+  { label: "Général", items: [
+    { page: "dashboard", icon: LayoutDashboard, label: "Tableau de bord", perm: null },
+    { page: "workers",   icon: Users,           label: "Employés",        perm: "workers.view" },
+  ]},
+  { label: "Médical", items: [
+    { page: "visits",    icon: Stethoscope,     label: "Consultations",   perm: "visits.view" },
+  ]},
+  { label: "Analyse", items: [
+    { page: "reports",   icon: BarChart3,       label: "Rapports",        perm: ["reports.view", "reports.prescriptions", "reports.aptitudes"] },
+  ]},
+  { label: "Paramètres", items: [
+    { page: "visitTypes",   icon: ClipboardList, label: "Types de consultation", perm: "settings.visitTypes" },
+    { page: "decisions",    icon: ShieldCheck,   label: "Décisions d'aptitude",  perm: "settings.decisions" },
+    { page: "examTypes",    icon: FlaskConical,  label: "Types d'examens",       perm: "settings.examTypes" },
+    { page: "organization", icon: Building2,     label: "Organisation",          perm: "settings.organization" },
+  ]},
+  { label: "Administration", items: [
+    { page: "roles",          icon: Shield,  label: "Rôles",        perm: "admin.roles" },
+    { page: "userManagement", icon: UserCog, label: "Utilisateurs", perm: "admin.users" },
+  ]},
+];
 
 // Liste de toutes les pages de l'application
 export type AppPage =
@@ -94,13 +128,13 @@ export function ProfilePopover({
   const Avatar = ({ size = "sm" }: { size?: "sm" | "lg" }) => {
     const cls = size === "lg"
       ? "h-10 w-10 shrink-0 rounded-full text-sm font-bold text-white"
-      : "h-8 w-8 shrink-0 rounded-full text-xs font-bold text-white";
+      : "h-9 w-9 shrink-0 rounded-full text-xs font-bold text-white";
     if (userPhoto) {
-      return <img src={userPhoto} alt={userName} className={`${cls} object-cover ring-2 ring-white/20`} />;
+      return <img src={userPhoto} alt={userName} className={`${cls} object-cover ring-2 ring-border`} />;
     }
     return (
-      <span className={`flex items-center justify-center ${cls} ${isSuperAdmin ? "bg-gradient-to-br from-yellow-500 to-amber-600 ring-2 ring-yellow-300/60" : "bg-medwork-cyan ring-2 ring-white/20"}`}>
-        {isSuperAdmin ? "⭐" : initials}
+      <span className={`grid place-items-center ${cls} bg-gradient-to-br from-brand-deep to-brand-vibrant`}>
+        {initials}
       </span>
     );
   };
@@ -110,44 +144,42 @@ export function ProfilePopover({
       <button
         onClick={() => setOpen((v) => !v)}
         title={collapsed ? `${userName} — ${userRole}` : undefined}
-        className={`flex w-full items-center gap-3 rounded-xl p-2 transition hover:bg-white/10 ${open ? "bg-white/10" : ""}`}
+        className={`flex w-full items-center gap-3 rounded-md px-2 py-1.5 transition hover:bg-muted ${open ? "bg-muted" : ""}`}
       >
         <Avatar size="sm" />
         {!collapsed && (
-          <span className="flex-1 overflow-hidden text-left">
-            <p className="truncate text-sm font-semibold text-white">{userName}</p>
-            <p className="truncate text-[11px] text-slate-400">{userRole}</p>
+          <span className="min-w-0 flex-1 overflow-hidden text-left">
+            <p className="truncate text-xs font-semibold text-foreground">{userName}</p>
+            <p className="truncate text-[10px] text-muted-foreground">{userRole}</p>
           </span>
         )}
       </button>
 
       {open && (
-        <div className={`absolute z-50 w-56 rounded-xl border border-white/10 bg-[#1a2744] p-3 shadow-2xl ${collapsed ? "bottom-0 left-14" : "bottom-14 left-0 right-0"}`}>
-          <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+        <div className={`absolute z-50 w-56 rounded-xl border border-border bg-surface p-3 shadow-elevated ${collapsed ? "bottom-0 left-14" : "bottom-14 left-0 right-0"}`}>
+          <div className="flex items-center gap-3 border-b border-border pb-3">
             <Avatar size="lg" />
             <div className="overflow-hidden">
-              <p className="truncate text-sm font-semibold text-white">{userName}</p>
-              <p className="truncate text-[11px] text-slate-400">{userRole}</p>
+              <p className="truncate text-sm font-semibold text-foreground">{userName}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{userRole}</p>
               {isSuperAdmin && (
-                <span className="mt-0.5 inline-block rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">⭐ Suprême</span>
+                <span className="mt-0.5 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Super admin</span>
               )}
             </div>
           </div>
           {onNavigate && (
             <button
               onClick={() => { setOpen(false); onNavigate("profile"); }}
-              className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+              className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
-              <Icon d={icons.users} size={15} />
-              Mon profil
+              <UserRound className="size-4" /> Mon profil
             </button>
           )}
           <button
             onClick={() => { setOpen(false); onLogout(); }}
-            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
+            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger/10"
           >
-            <Icon d={icons.logout} size={15} />
-            Déconnexion
+            <LogOut className="size-4" /> Déconnexion
           </button>
         </div>
       )}
@@ -171,25 +203,21 @@ export function QuickActionMenu({ onNavigate }: { onNavigate: (page: AppPage) =>
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition"
-        style={{ background: '#00aadd', border: 'none', cursor: 'pointer', fontSize: 13 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='#0099cc'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='#00aadd'; }}
-      >
-        <Icon d={icons.plus} size={14} />
-        <span>Nouveau</span>
+        className="flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold text-white transition hover:bg-primary-hover">
+        <Plus className="size-4" />
+        <span className="hidden sm:inline">Nouvelle consultation</span>
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-1 w-56 rounded-xl border border-slate-100 bg-white p-1.5"
-          style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.1)', top: 'calc(100% + 4px)' }}>
+        <div className="absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-surface p-1.5 shadow-elevated"
+          style={{ top: 'calc(100% + 6px)' }}>
           {[
             { icon: "stethoscope" as const, label: "Nouvelle consultation", sub: "Créer une visite médicale", page: "visits" as AppPage },
-            { icon: "userPlus" as const, label: "Nouveau travailleur", sub: "Ajouter un dossier", page: "workerForm" as AppPage },
+            { icon: "userPlus" as const, label: "Nouvel employé", sub: "Ajouter un dossier", page: "workerForm" as AppPage },
           ].map(({ icon, label, sub, page }) => (
             <button key={label} onClick={() => { setOpen(false); onNavigate(page); }}
-              className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left transition hover:bg-slate-50">
-              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-medwork-cyan">
+              className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left transition hover:bg-muted">
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon d={icons[icon]} size={14} />
               </span>
               <span>
@@ -228,7 +256,7 @@ export function Sidebar({
   const active = getActiveItem(currentPage);
   const { org } = useOrg();
 
-  // Super admin voit tout, sinon on vérifie les permissions
+  // Super admin voit tout, sinon on vérifie les permissions (avec héritage par préfixe)
   const can = (perm: string): boolean => {
     if (isSuperAdmin || permissions.includes("*")) return true;
     if (permissions.includes(perm)) return true;
@@ -238,82 +266,60 @@ export function Sidebar({
     }
     return false;
   };
-  const canAny = (...perms: string[]) => perms.some(can);
-  const canSome = (prefix: string) => isSuperAdmin || permissions.includes("*") || permissions.some(p => p === prefix || p.startsWith(prefix + "."));
-
-  const NavItem = ({ page, icon, label, indent = false }: { page: AppPage; icon: keyof typeof icons; label: string; indent?: boolean }) => {
-    const isActive = active === page;
-    return (
-      <button
-        onClick={() => onNavigate(page)}
-        title={collapsed ? label : undefined}
-        className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all ${collapsed ? "justify-center" : ""} ${isActive ? "bg-medwork-cyan/20 text-medwork-cyan" : "text-slate-400 hover:bg-white/8 hover:text-slate-200"}`}
-        style={{ fontSize: 13, fontWeight: isActive ? 500 : 400, border: 'none', cursor: 'pointer', position: 'relative', marginBottom: 1 }}
-      >
-        {isActive && !collapsed && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-medwork-cyan rounded-r" />}
-        <span className="shrink-0 flex"><Icon d={icons[icon]} size={15} /></span>
-        {!collapsed && <span className="truncate">{label}</span>}
-      </button>
-    );
-  };
-
-  const SectionLabel = ({ label }: { label: string; icon: keyof typeof icons }) =>
-    collapsed ? <div className="my-2 mx-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} /> : (
-      <p className="mt-4 mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{label}</p>
-    );
+  const itemVisible = (perm: string | string[] | null) =>
+    perm == null ? true : Array.isArray(perm) ? perm.some(can) : can(perm);
 
   return (
-    <aside className={`relative flex h-screen flex-col bg-medwork-navy transition-all duration-200 ${collapsed ? "w-[60px]" : "w-[224px]"}`}
-      style={{ borderRight: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+    <aside className={`${collapsed ? "w-[68px]" : "w-64"} relative flex h-screen shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200`}>
 
       {/* Logo */}
-      <div className={`flex h-14 shrink-0 items-center gap-2.5 border-b px-3`}
-        style={{ borderColor: 'rgba(255,255,255,0.08)', justifyContent: collapsed ? 'center' : undefined }}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-medwork-cyan font-bold text-white text-sm overflow-hidden">
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-4">
+        <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-brand-deep text-white shadow-sm">
           {org.logo
-            ? <img src={org.logo} alt={org.name} className="h-full w-full object-contain" />
-            : (org.name || "M").charAt(0).toUpperCase()}
+            ? <img src={org.logo} alt={org.name} className="h-full w-full object-contain p-1" />
+            : <span className="font-display text-base font-black leading-none">{(org.name || "M").charAt(0).toUpperCase()}</span>}
         </div>
-        {!collapsed && (
-          <div>
-            <p className="text-sm font-semibold text-white leading-tight">{org.name}</p>
-            <p className="text-[10px] font-normal leading-tight" style={{ color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{org.tagline || "Santé au travail"}</p>
-          </div>
-        )}
+        {!collapsed && <span className="truncate font-display text-lg font-bold tracking-tight text-foreground">{org.name}</span>}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-0.5">
-        <NavItem page="dashboard" icon="dashboard" label="Tableau de bord" />
-        {canAny("workers.view", "visits.view") && <SectionLabel label="Dossier Médical" icon="folder" />}
-        {can("workers.view") && <NavItem page="workers" icon="workers" label="Travailleurs" />}
-        {can("visits.view")  && <NavItem page="visits"  icon="visits"  label="Visites médicales" />}
-        {canAny("reports.view", "reports.prescriptions", "reports.aptitudes") && (
-          <><SectionLabel label="Rapports" icon="reports" /><NavItem page="reports" icon="reports" label="Rapports" /></>
-        )}
-        {canAny("settings.visitTypes", "settings.decisions", "settings.examTypes", "settings.organization") && <SectionLabel label="Paramètres" icon="settings" />}
-        {can("settings.visitTypes") && <NavItem page="visitTypes" icon="visitType" label="Types de visite" />}
-        {can("settings.decisions")  && <NavItem page="decisions"  icon="decisions" label="Décisions" />}
-        {can("settings.examTypes")  && <NavItem page="examTypes"  icon="examTypes" label="Types d'examens" />}
-        {can("settings.organization") && <NavItem page="organization" icon="settings" label="Organisation" />}
-        {canAny("admin.roles", "admin.users") && <SectionLabel label="Utilisateurs" icon="userGroup" />}
-        {can("admin.roles") && <NavItem page="roles"          icon="roles"  label="Rôles" />}
-        {can("admin.users") && <NavItem page="userManagement" icon="users"  label="Utilisateurs" />}
+      <nav className="flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-3 py-4">
+        {NAV_SECTIONS.map((section) => {
+          const items = section.items.filter((it) => itemVisible(it.perm));
+          if (items.length === 0) return null;
+          return (
+            <div key={section.label}>
+              {!collapsed && (
+                <div className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70">{section.label}</div>
+              )}
+              <div className="space-y-0.5">
+                {items.map((it) => {
+                  const isActive = active === it.page;
+                  const ItemIcon = it.icon;
+                  return (
+                    <button key={it.page} onClick={() => onNavigate(it.page)} title={collapsed ? it.label : undefined}
+                      className={`group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${collapsed ? "justify-center" : ""} ${isActive ? "bg-primary-light/10 text-primary-light" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                      <ItemIcon className={`size-[18px] shrink-0 ${isActive ? "text-primary-light" : "text-muted-foreground/80 group-hover:text-foreground"}`} strokeWidth={isActive ? 2.2 : 1.75} />
+                      {!collapsed && <span className="truncate">{it.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       {/* Profil */}
-      <div className="shrink-0 p-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="shrink-0 border-t border-border p-3">
         <ProfilePopover collapsed={collapsed} userName={userName} userRole={userRole} userPhoto={userPhoto} isSuperAdmin={isSuperAdmin} onLogout={onLogout} onNavigate={onNavigate} />
       </div>
 
-      {/* Toggle */}
+      {/* Toggle réduire/déployer */}
       <button onClick={() => setCollapsed(v => !v)}
-        className="absolute -right-3 top-16 z-10 flex h-6 w-6 items-center justify-center rounded-full border bg-medwork-navy transition"
-        style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color='#00aadd'; (e.currentTarget as HTMLButtonElement).style.borderColor='rgba(0,170,221,0.5)'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color='rgba(255,255,255,0.5)'; (e.currentTarget as HTMLButtonElement).style.borderColor='rgba(255,255,255,0.15)'; }}
-      >
-        <Icon d={collapsed ? icons.chevRight : icons.chevLeft} size={11} />
+        title={collapsed ? "Déployer" : "Réduire"}
+        className="absolute -right-3 top-[52px] z-10 grid h-6 w-6 place-items-center rounded-full border border-border bg-surface text-muted-foreground shadow-card transition hover:border-primary/40 hover:text-primary">
+        {collapsed ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
       </button>
     </aside>
   );
@@ -639,27 +645,28 @@ export function AppHeader({
           onOpenVisit={onOpenVisit}
         />
       )}
-      <header className="flex h-14 shrink-0 items-center justify-between gap-4 bg-white px-6"
-        style={{ borderBottom: '1px solid #e2e6ea' }}>
-        <div className="flex shrink-0 items-center gap-3">
-          {left}
-          <div>
-            <h2 className="text-base font-semibold text-medwork-navy leading-tight">{title}</h2>
-            {subtitle && <p className="text-xs text-slate-400 font-normal mt-0.5">{subtitle}</p>}
+      <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-surface px-6">
+        {left}
+        {(title || subtitle) && (
+          <div className="hidden shrink-0 lg:block">
+            <p className="text-sm font-semibold leading-tight text-foreground">{title}</p>
+            {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
           </div>
-        </div>
-        <div className="flex flex-1 items-center justify-end gap-2.5">
-          <button onClick={() => setSearchOpen(true)}
-            className="flex w-full max-w-xs items-center gap-2 rounded-lg border bg-slate-50 px-3 py-1.5 text-sm text-slate-400 transition"
-            style={{ borderColor: '#e2e6ea', fontSize: 13 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#00aadd'; (e.currentTarget as HTMLButtonElement).style.background='white'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#e2e6ea'; (e.currentTarget as HTMLButtonElement).style.background='#f8fafc'; }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5 shrink-0">
-              <path d="M21 21l-4.35-4.35 M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <span className="flex-1 text-left">Rechercher…</span>
-            <kbd className="hidden rounded bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-400 ring-1 ring-slate-200 sm:block">⌘K</kbd>
+        )}
+
+        {/* Recherche globale */}
+        <button onClick={() => setSearchOpen(true)}
+          className="flex h-9 max-w-md flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground transition hover:border-primary/40">
+          <Search className="size-4 shrink-0" />
+          <span className="flex-1 truncate text-left">Rechercher un employé, un dossier, une entreprise…</span>
+          <kbd className="hidden items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium sm:flex">⌘K</kbd>
+        </button>
+
+        {/* Cluster droite */}
+        <div className="flex items-center gap-2">
+          <button className="relative grid h-9 w-9 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground" aria-label="Notifications">
+            <Bell className="size-[18px]" strokeWidth={1.75} />
+            <span className="absolute right-2 top-2 size-2 rounded-full bg-danger ring-2 ring-surface" />
           </button>
           <QuickActionMenu onNavigate={onNavigate} />
         </div>
