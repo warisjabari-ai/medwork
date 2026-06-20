@@ -1,28 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  /* ─── Couleur d'accent dynamique (générée depuis la couleur de l'entreprise) ───
+     Stockée en canaux RGB ("r g b") pour permettre les opacités Tailwind. */
+  --primary:        0 170 221;
+  --primary-light:  51 191 232;
+  --primary-dark:   0 126 164;
+  --primary-hover:  0 150 195;
+  --primary-bg:     232 247 252;   /* teinte de fond très claire */
+  --primary-border: 179 230 244;
+
+  /* ─── Neutres (base claire façon Linear/Stripe) ─── */
   --navy:       #0c1e30;
   --cyan:       #00aadd;
   --cyan-light: #e8f7fc;
-  --surface:    #f4f6f8;
-  --border:     #e2e6ea;
-  --border-soft:#edf0f3;
-  --text-1:     #1a2332;
-  --text-2:     #4b5563;
-  --text-3:     #9ca3af;
-  --text-4:     #c4cdd6;
+  --surface:    #f8fafc;   /* slate-50 */
+  --border:     #e2e8f0;   /* slate-200 */
+  --border-soft:#eef2f6;
+  --text-1:     #0f172a;   /* slate-900 */
+  --text-2:     #475569;   /* slate-600 */
+  --text-3:     #94a3b8;   /* slate-400 */
+  --text-4:     #cbd5e1;   /* slate-300 */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+html { font-size: 14px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-weight: 400;
   color: var(--text-1);
   background: var(--surface);
@@ -34,8 +44,26 @@ body {
 ::-webkit-scrollbar-thumb { background: #dde2e8; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #c0c8d0; }
 
-:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid rgb(var(--primary)); outline-offset: 2px; border-radius: 4px; }
 
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* ─── Animations de la page de connexion (transform/opacity uniquement) ─── */
+@keyframes mw-rise   { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+@keyframes mw-fade   { from { opacity:0; } to { opacity:1; } }
+@keyframes mw-float  { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-14px); } }
+@keyframes mw-float2 { 0%,100% { transform:translate(0,0); } 50% { transform:translate(10px,12px); } }
+
+.mw-rise { opacity:0; animation: mw-rise 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+.mw-fade { opacity:0; animation: mw-fade 0.9s ease forwards; }
+.mw-delay-1 { animation-delay: 0.08s; }
+.mw-delay-2 { animation-delay: 0.16s; }
+.mw-delay-3 { animation-delay: 0.24s; }
+.mw-delay-4 { animation-delay: 0.32s; }
+.mw-delay-5 { animation-delay: 0.40s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mw-rise, .mw-fade { animation: none; opacity: 1; }
+}
