@@ -3,6 +3,7 @@
 // Tu n'as pas besoin de comprendre le contenu — il suffit de le copier.
 
 import { useEffect, useRef, useState } from "react";
+import { useOrg } from "../branding";
 
 // Liste de toutes les pages de l'application
 export type AppPage =
@@ -15,6 +16,7 @@ export type AppPage =
   | "visitTypes"
   | "decisions"
   | "examTypes"
+  | "organization"
   | "roles"
   | "userManagement"
   | "profile"
@@ -224,6 +226,7 @@ export function Sidebar({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const active = getActiveItem(currentPage);
+  const { org } = useOrg();
 
   // Super admin voit tout, sinon on vérifie les permissions
   const can = (perm: string): boolean => {
@@ -266,11 +269,15 @@ export function Sidebar({
       {/* Logo */}
       <div className={`flex h-14 shrink-0 items-center gap-2.5 border-b px-3`}
         style={{ borderColor: 'rgba(255,255,255,0.08)', justifyContent: collapsed ? 'center' : undefined }}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-medwork-cyan font-bold text-white text-sm">M</div>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-medwork-cyan font-bold text-white text-sm overflow-hidden">
+          {org.logo
+            ? <img src={org.logo} alt={org.name} className="h-full w-full object-contain" />
+            : (org.name || "M").charAt(0).toUpperCase()}
+        </div>
         {!collapsed && (
           <div>
-            <p className="text-sm font-semibold text-white leading-tight">MedWork</p>
-            <p className="text-[10px] font-normal leading-tight" style={{ color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Santé au travail</p>
+            <p className="text-sm font-semibold text-white leading-tight">{org.name}</p>
+            <p className="text-[10px] font-normal leading-tight" style={{ color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{org.tagline || "Santé au travail"}</p>
           </div>
         )}
       </div>
@@ -284,10 +291,11 @@ export function Sidebar({
         {canAny("reports.view", "reports.prescriptions", "reports.aptitudes") && (
           <><SectionLabel label="Rapports" icon="reports" /><NavItem page="reports" icon="reports" label="Rapports" /></>
         )}
-        {canAny("settings.visitTypes", "settings.decisions", "settings.examTypes") && <SectionLabel label="Paramètres" icon="settings" />}
+        {canAny("settings.visitTypes", "settings.decisions", "settings.examTypes", "settings.organization") && <SectionLabel label="Paramètres" icon="settings" />}
         {can("settings.visitTypes") && <NavItem page="visitTypes" icon="visitType" label="Types de visite" />}
         {can("settings.decisions")  && <NavItem page="decisions"  icon="decisions" label="Décisions" />}
         {can("settings.examTypes")  && <NavItem page="examTypes"  icon="examTypes" label="Types d'examens" />}
+        {can("settings.organization") && <NavItem page="organization" icon="settings" label="Organisation" />}
         {canAny("admin.roles", "admin.users") && <SectionLabel label="Utilisateurs" icon="userGroup" />}
         {can("admin.roles") && <NavItem page="roles"          icon="roles"  label="Rôles" />}
         {can("admin.users") && <NavItem page="userManagement" icon="users"  label="Utilisateurs" />}

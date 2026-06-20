@@ -41,6 +41,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   { key: "settings.visitTypes", label: "Gérer les types de visite", description: "Créer, modifier, supprimer les types", group: "Paramètres" },
   { key: "settings.decisions",  label: "Gérer les décisions",       description: "Créer, modifier, supprimer les décisions", group: "Paramètres" },
   { key: "settings.examTypes",  label: "Gérer les types d'examens", description: "Créer, modifier, supprimer les examens biologiques", group: "Paramètres" },
+  { key: "settings.organization", label: "Gérer l'organisation",     description: "Modifier le nom, le logo et la couleur de l'organisation", group: "Paramètres" },
   // Administration
   { key: "admin.roles",   label: "Gérer les rôles",           description: "Créer, modifier, supprimer les rôles",    group: "Administration" },
   { key: "admin.users",   label: "Gérer les utilisateurs",    description: "Créer et administrer les comptes",        group: "Administration" },

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useOrg } from "../branding";
 
 type Props = {
   onLogin: (matricule: string, password: string) => Promise<void>;
@@ -6,6 +7,7 @@ type Props = {
 };
 
 export default function LoginPage({ onLogin }: Props) {
+  const { org } = useOrg();
   const [showPassword, setShowPassword] = useState(false);
   const [matricule, setMatricule]       = useState("");
   const [password, setPassword]         = useState("");
@@ -31,14 +33,16 @@ export default function LoginPage({ onLogin }: Props) {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
 
-      {/* ── Panneau gauche — Marque MedWork ── */}
-      <div className="relative hidden lg:flex lg:flex-col items-center justify-center overflow-hidden text-white" style={{ background: "linear-gradient(135deg, #00aadd 0%, #0099cc 50%, #0077aa 100%)" }}>
+      {/* ── Panneau gauche — Marque de l'organisation ── */}
+      <div className="relative hidden lg:flex lg:flex-col items-center justify-center overflow-hidden text-white" style={{ background: `linear-gradient(135deg, ${org.primaryColor || "#00aadd"} 0%, ${(org.primaryColor || "#00aadd")}dd 50%, ${(org.primaryColor || "#00aadd")}aa 100%)` }}>
         <div className="relative z-10 text-center px-10">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 backdrop-blur-sm ring-1 ring-white/30 shadow-xl">
-            <span className="text-4xl font-black">M</span>
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 backdrop-blur-sm ring-1 ring-white/30 shadow-xl overflow-hidden">
+            {org.logo
+              ? <img src={org.logo} alt={org.name} className="h-full w-full object-contain p-1.5" />
+              : <span className="text-4xl font-black">{(org.name || "M").charAt(0).toUpperCase()}</span>}
           </div>
-          <p className="text-4xl font-black tracking-tight">MedWork</p>
-          <p className="mt-3 text-base font-medium text-white/80">Système de gestion de la santé au travail</p>
+          <p className="text-4xl font-black tracking-tight">{org.name}</p>
+          {org.tagline && <p className="mt-3 text-base font-medium text-white/80">{org.tagline}</p>}
         </div>
         {/* Halo décoratif */}
         <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
@@ -51,10 +55,12 @@ export default function LoginPage({ onLogin }: Props) {
 
           {/* En-tête mobile uniquement */}
           <div className="mb-8 text-center lg:hidden">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-medwork-cyan shadow-lg">
-              <span className="text-2xl font-black text-white">M</span>
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-medwork-cyan shadow-lg overflow-hidden">
+              {org.logo
+                ? <img src={org.logo} alt={org.name} className="h-full w-full object-contain p-1" />
+                : <span className="text-2xl font-black text-white">{(org.name || "M").charAt(0).toUpperCase()}</span>}
             </div>
-            <p className="text-xl font-bold text-medwork-navy">MedWork</p>
+            <p className="text-xl font-bold text-medwork-navy">{org.name}</p>
           </div>
 
           {/* Titre */}
@@ -141,7 +147,7 @@ export default function LoginPage({ onLogin }: Props) {
           </form>
 
           <p className="mt-8 text-center text-[11px] text-slate-400">
-            MedWork · Santé au travail · {new Date().getFullYear()}
+            {org.name}{org.tagline ? ` · ${org.tagline}` : ""} · {new Date().getFullYear()}
           </p>
         </div>
       </div>

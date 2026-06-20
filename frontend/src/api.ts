@@ -144,6 +144,24 @@ export const medicalHistoryAPI = {
     request(`/workers/${workerId}/medical-history/expositions/${id}`, { method: "DELETE" }),
 };
 
+// ─── Identité de l'organisation (marque) ─────────────────────────────────────
+export type Organization = {
+  name: string;
+  tagline?: string | null;
+  logo?: string | null;
+  primaryColor?: string | null;
+  address?: string | null;
+  country?: string | null;
+};
+
+export const settingsAPI = {
+  // Public : utilisable même sans être connecté (page de connexion)
+  getOrganization: () => request<Organization>("/settings/organization"),
+  // Super admin uniquement
+  updateOrganization: (data: Partial<Organization>) =>
+    request<Organization>("/settings/organization", { method: "PUT", body: JSON.stringify(data) }),
+};
+
 // ─── Types d'examens biologiques ─────────────────────────────────────────────
 export const examTypesAPI = {
   list: () => request<any[]>("/exam-types"),

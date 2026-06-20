@@ -271,3 +271,18 @@ model WorkerExposition {
 
   worker    Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
 }
+
+// ─── Identité de l'organisation (réglages de marque) ─────────────────────────
+// Table à ligne unique (id = 1) : identité du service de santé qui utilise MedWork.
+// Remplace toute référence "CBG" codée en dur — configurable depuis l'interface.
+model OrganizationSettings {
+  id           Int      @id @default(1)
+  name         String   @default("MedWork")          // nom affiché (connexion, sidebar, documents)
+  tagline      String?  @default("Santé au travail") // accroche / sous-titre
+  logo         String?  // image base64 (data URL), comme les photos utilisateurs
+  primaryColor String?  @default("#00aadd")          // couleur principale (hex)
+  address      String?  // adresse pour les en-têtes de documents
+  country      String?  // pays
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

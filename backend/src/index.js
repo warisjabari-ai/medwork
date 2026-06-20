@@ -55,6 +55,7 @@ app.use("/api/visit-types", require("./routes/visitTypes"));
 app.use("/api/decisions",   require("./routes/decisions"));
 app.use("/api/reports",     require("./routes/reports"));
 app.use("/api/uploads",     require("./routes/uploads"));
+app.use("/api/settings",    require("./routes/settings"));
 
 // ─── Route de santé ───────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

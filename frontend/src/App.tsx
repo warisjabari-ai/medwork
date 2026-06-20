@@ -13,6 +13,7 @@ import UserManagementPage, { type AppUser } from "./pages/UserManagementPage";
 import ProfilePage from "./pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import ExamTypesPage, { type ExamType } from "./pages/ExamTypesPage";
+import OrganizationPage from "./pages/OrganizationPage";
 import { Sidebar, AppHeader } from "./components/Navigation";
 import type { AppPage } from "./components/Navigation";
 import type { WorkerVisit } from "./types/visit";
@@ -681,6 +682,15 @@ function App() {
         onAdd={handleAddExamType}
         onEdit={handleEditExamType}
         onDelete={handleDeleteExamType}
+        {...sidebarProps}
+      />
+    );
+  }
+
+  if (page === "organization") {
+    return (
+      <OrganizationPage
+        currentPage="organization"
         {...sidebarProps}
       />
     );
