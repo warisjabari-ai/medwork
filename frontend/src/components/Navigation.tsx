@@ -269,8 +269,8 @@ export function Sidebar({
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-medwork-cyan font-bold text-white text-sm">M</div>
         {!collapsed && (
           <div>
-            <p className="text-sm font-semibold text-white leading-tight">MédWork CBG</p>
-            <p className="text-[10px] font-normal leading-tight" style={{ color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Médecine du travail</p>
+            <p className="text-sm font-semibold text-white leading-tight">MedWork</p>
+            <p className="text-[10px] font-normal leading-tight" style={{ color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Santé au travail</p>
           </div>
         )}
       </div>

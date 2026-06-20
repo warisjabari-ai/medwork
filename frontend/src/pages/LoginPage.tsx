@@ -31,15 +31,18 @@ export default function LoginPage({ onLogin }: Props) {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
 
-      {/* ── Panneau gauche — Logo CBG ── */}
-      <div className="relative hidden lg:flex lg:flex-col overflow-hidden" style={{ background: "linear-gradient(135deg, #00aadd 0%, #0099cc 50%, #0077aa 100%)" }}>
-        {/* Image de fond pleine page */}
-        <img
-          src="/cbg-logo.jpg"
-          alt="CBG"
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
+      {/* ── Panneau gauche — Marque MedWork ── */}
+      <div className="relative hidden lg:flex lg:flex-col items-center justify-center overflow-hidden text-white" style={{ background: "linear-gradient(135deg, #00aadd 0%, #0099cc 50%, #0077aa 100%)" }}>
+        <div className="relative z-10 text-center px-10">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 backdrop-blur-sm ring-1 ring-white/30 shadow-xl">
+            <span className="text-4xl font-black">M</span>
+          </div>
+          <p className="text-4xl font-black tracking-tight">MedWork</p>
+          <p className="mt-3 text-base font-medium text-white/80">Système de gestion de la santé au travail</p>
+        </div>
+        {/* Halo décoratif */}
+        <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -top-20 -left-16 h-60 w-60 rounded-full bg-white/10 blur-2xl" />
       </div>
 
       {/* ── Panneau droit — Formulaire ── */}
@@ -51,7 +54,7 @@ export default function LoginPage({ onLogin }: Props) {
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-medwork-cyan shadow-lg">
               <span className="text-2xl font-black text-white">M</span>
             </div>
-            <p className="text-xl font-bold text-medwork-navy">MédWork CBG</p>
+            <p className="text-xl font-bold text-medwork-navy">MedWork</p>
           </div>
 
           {/* Titre */}
@@ -138,7 +141,7 @@ export default function LoginPage({ onLogin }: Props) {
           </form>
 
           <p className="mt-8 text-center text-[11px] text-slate-400">
-            MédWork CBG · Santé au travail · {new Date().getFullYear()}
+            MedWork · Santé au travail · {new Date().getFullYear()}
           </p>
         </div>
       </div>

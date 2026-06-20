@@ -40,7 +40,7 @@ export default function WorkerFormPage({
     matricule: workerToEdit?.matricule || "",
     department: workerToEdit?.department || "",
     position: workerToEdit?.position || "",
-    company: workerToEdit?.company || "CBG",
+    company: workerToEdit?.company || "",
     status: workerToEdit?.status || "Apte",
     lastVisit: workerToEdit?.lastVisit || "",
     residence: workerToEdit?.residence || "",
@@ -68,9 +68,9 @@ export default function WorkerFormPage({
 
   const fields = [
     { name: "name",       label: "Nom complet *",    placeholder: "Ex: Mamadou Diallo" },
-    { name: "matricule",  label: "Matricule *",       placeholder: "Ex: CBG-001" },
-    { name: "company",    label: "Entreprise *",      placeholder: "Ex: CBG" },
-    { name: "department", label: "Département *",     placeholder: "Ex: D0000" },
+    { name: "matricule",  label: "Matricule *",       placeholder: "Ex: MAT-001" },
+    { name: "company",    label: "Entreprise *",      placeholder: "Ex: nom de l'entreprise" },
+    { name: "department", label: "Département *",     placeholder: "Ex: Maintenance" },
     { name: "position",   label: "Poste *",           placeholder: "Ex: Opérateur" },
     { name: "residence",  label: "Résidence",         placeholder: "Ex: Kamsar" },
     { name: "lastVisit",  label: "Dernière visite",   placeholder: "Ex: 25/03/2026" },

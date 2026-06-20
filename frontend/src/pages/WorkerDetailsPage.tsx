@@ -127,7 +127,7 @@ function PrintHeader({ worker, visit }: { worker: Worker; visit: Visit }) {
   return (
     <div style={{ borderBottom: "2px solid #0f2d5a", paddingBottom: "12px", marginBottom: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div><div style={{ fontSize: "22px", fontWeight: 800, color: "#0f2d5a" }}>MédWork</div><div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>Service de Santé au Travail — CBG</div></div>
+        <div><div style={{ fontSize: "22px", fontWeight: 800, color: "#0f2d5a" }}>MedWork</div><div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>Service de Santé au Travail</div></div>
         <div style={{ textAlign: "right", fontSize: "11px", color: "#64748b" }}>
           {visit.ref && <div style={{ fontWeight: 700, fontFamily: "monospace", color: "#0f2d5a", marginBottom: "2px" }}>{visit.ref}</div>}
           <div>Date : {visit.date}</div>
@@ -223,7 +223,7 @@ function PrintModal({ worker, visit, initialDoc, onClose, allUsers }: { worker: 
   const handlePrint = () => {
     if (!printRef.current) return;
     const content = printRef.current.innerHTML;
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>MédWork CBG — ${activeDoc}</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>MedWork — ${activeDoc}</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1e293b; padding: 20px; background: white; }

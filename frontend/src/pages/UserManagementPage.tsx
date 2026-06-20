@@ -143,7 +143,7 @@ function UserForm({
         {/* Email */}
         <div>
           <label className={lbl}>Adresse e-mail</label>
-          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Ex: m.camara@cbg.com" className={inp} />
+          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Ex: prenom.nom@exemple.com" className={inp} />
         </div>
 
         {/* Rôle */}
