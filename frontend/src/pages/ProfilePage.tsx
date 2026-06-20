@@ -4,6 +4,7 @@ import type { AppPage } from "../components/Navigation";
 import type { AppUser } from "./UserManagementPage";
 import type { Role } from "./RolesPage";
 import { roleBadgeClass, roleDotClass } from "./RolesPage";
+import { authAPI } from "../api";
 
 type Props = {
   currentUser: AppUser;
@@ -109,25 +110,59 @@ export default function ProfilePage({
 }: Props) {
   const [form, setForm] = useState({ name: currentUser?.name ?? "", email: currentUser?.email ?? "" });
   const [matricule, setMatricule] = useState(currentUser?.matricule ?? "");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const role = roles.find((r) => r.id === currentUser?.roleId);
   const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20";
   const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400";
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { alert("Le nom ne peut pas être vide."); return; }
-    if (!matricule.trim()) { alert("L'identifiant ne peut pas être vide."); return; }
-    if (password && password !== confirmPassword) { alert("Les mots de passe ne correspondent pas."); return; }
-    // Inclure le mot de passe uniquement s'il a été saisi (sinon il reste inchangé)
-    onSave({ ...currentUser, name: form.name, email: form.email, matricule, ...(password ? { password } : {}) });
-    setPassword("");
-    setConfirmPassword("");
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setError("");
+    if (!form.name.trim()) { setError("Le nom ne peut pas être vide."); return; }
+    if (!matricule.trim()) { setError("L'identifiant ne peut pas être vide."); return; }
+    if (password) {
+      if (!currentPassword) { setError("Veuillez saisir votre mot de passe actuel."); return; }
+      if (password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
+    }
+
+    setSaving(true);
+    try {
+      // 1. Changement de mot de passe via la route dédiée (autorisée à tout utilisateur
+      //    authentifié, qui vérifie le mot de passe actuel) — et non via PUT /users/:id
+      //    qui est réservé aux administrateurs (permission admin.users).
+      if (password) {
+        await authAPI.changePassword(currentPassword, password);
+      }
+
+      // 2. Mise à jour des informations de profil (nom / e-mail / identifiant) via onSave.
+      //    On ne l'appelle que si quelque chose a réellement changé, pour éviter une
+      //    erreur 403 inutile chez les utilisateurs non-admin qui ne modifient que leur
+      //    mot de passe.
+      const profileChanged =
+        form.name !== (currentUser?.name ?? "") ||
+        form.email !== (currentUser?.email ?? "") ||
+        matricule !== (currentUser?.matricule ?? "");
+      if (profileChanged) {
+        onSave({ ...currentUser, name: form.name, email: form.email, matricule });
+      }
+
+      setCurrentPassword("");
+      setPassword("");
+      setConfirmPassword("");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      // Ex. « Mot de passe actuel incorrect. » renvoyé par la route change-password
+      setError(err?.message || "Une erreur est survenue lors de l'enregistrement.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const initials = (currentUser?.name ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -211,6 +246,10 @@ export default function ProfilePage({
                 {/* Changement mot de passe */}
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Changer le mot de passe</p>
+                  <div>
+                    <label className={lbl}>Mot de passe actuel</label>
+                    <input type={showPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Requis pour changer de mot de passe" autoComplete="current-password" className={inp} />
+                  </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
                       <label className={lbl}>Nouveau mot de passe</label>
@@ -228,9 +267,15 @@ export default function ProfilePage({
                   </div>
                 </div>
 
+                {error && (
+                  <p className="flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200">
+                    <span className="text-base">⚠️</span> {error}
+                  </p>
+                )}
+
                 <div className="flex items-center gap-3">
-                  <button type="submit" className="rounded-xl bg-medwork-cyan px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-cyan-900/20 transition hover:opacity-90">
-                    Enregistrer les modifications
+                  <button type="submit" disabled={saving} className="rounded-xl bg-medwork-cyan px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-cyan-900/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+                    {saving ? "Enregistrement…" : "Enregistrer les modifications"}
                   </button>
                   {saved && (
                     <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
