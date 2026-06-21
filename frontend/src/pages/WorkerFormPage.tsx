@@ -44,6 +44,7 @@ export default function WorkerFormPage({
     status: workerToEdit?.status || "Apte",
     lastVisit: workerToEdit?.lastVisit || "",
     residence: workerToEdit?.residence || "",
+    riskLevel: workerToEdit?.riskLevel || "Modéré",
   });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -130,6 +131,14 @@ export default function WorkerFormPage({
                     />
                   </div>
                 ))}
+                <div>
+                  <label className={lbl}>Niveau de risque</label>
+                  <select name="riskLevel" value={formData.riskLevel} onChange={handleChange} className={inp}>
+                    <option value="Faible">Faible</option>
+                    <option value="Modéré">Modéré</option>
+                    <option value="Élevé">Élevé</option>
+                  </select>
+                </div>
               </div>
 
               {/* Info : statut automatique */}

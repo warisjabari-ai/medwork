@@ -3,8 +3,26 @@ import { Sidebar, AppHeader } from "../components/Navigation";
 import type { AppPage } from "../components/Navigation";
 import {
   Search, Plus, Download, ChevronDown, Pencil, Trash2,
-  CheckCircle2, RotateCcw, DoorOpen,
+  CheckCircle2, RotateCcw, DoorOpen, Filter, type LucideIcon,
 } from "lucide-react";
+
+// ─── Filtre déroulant (style chip du design) ─────────────────────────────────
+function FilterSelect({ icon: Ico, value, onChange, allLabel, options }: {
+  icon?: LucideIcon; value: string; onChange: (v: string) => void; allLabel: string; options: { value: string; label: string }[];
+}) {
+  const Ic = Ico ?? Filter;
+  return (
+    <div className="relative">
+      <Ic className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="h-9 appearance-none rounded-md border border-border bg-surface pl-8 pr-7 text-xs font-medium text-foreground outline-none transition hover:bg-muted focus:border-primary/40">
+        <option value="">{allLabel}</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}
 
 // ─── Export helpers ───────────────────────────────────────────────────────────
 function exportCSV(rows: string[][], filename: string) {
@@ -44,6 +62,7 @@ export type Worker = {
   lastVisit: string;
   residence: string;
   contractStatus?: "actif" | "embauche" | "fin_contrat";
+  riskLevel?: "Faible" | "Modéré" | "Élevé" | string;
 };
 
 type Props = {
@@ -81,6 +100,11 @@ const aptPill: Record<string, string> = {
   restriction: "bg-warning/10 text-warning",
   inapte: "bg-danger/10 text-danger",
 };
+const riskPill: Record<string, string> = {
+  "Élevé": "bg-danger/10 text-danger",
+  "Modéré": "bg-warning/10 text-warning",
+  "Faible": "bg-success/10 text-success",
+};
 
 export default function WorkersPage({
   workers, currentPage, onNavigate, onSelect, onCreate, onEdit, onDelete,
@@ -88,7 +112,10 @@ export default function WorkersPage({
   permissions = [], searchData, onOpenWorker, onOpenVisit,
 }: Props) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Tous");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [positionFilter, setPositionFilter] = useState("");
+  const [riskFilter, setRiskFilter] = useState("");
+  const [aptFilter, setAptFilter] = useState("");
 
   const can = (perm: string): boolean => {
     if (isSuperAdmin || permissions.includes("*")) return true;
@@ -116,18 +143,20 @@ export default function WorkersPage({
     };
   }, [workers]);
 
+  const companies = useMemo(() => [...new Set(workers.map((w) => w.company).filter(Boolean))].sort(), [workers]);
+  const positions = useMemo(() => [...new Set(workers.map((w) => w.position).filter(Boolean))].sort(), [workers]);
+
   const filteredWorkers = useMemo(() => {
     const q = norm(search);
     return workers.filter((w) => {
-      const matchesSearch = !q || norm(w.name).includes(q) || norm(w.matricule).includes(q) || norm(w.department).includes(q) || norm(w.company).includes(q);
-      const matchesStatus =
-        statusFilter === "Tous" ||
-        (statusFilter === "embauche" ? w.contractStatus === "embauche" :
-         statusFilter === "fin_contrat" ? w.contractStatus === "fin_contrat" :
-         aptKind(w.status) === statusFilter);
-      return matchesSearch && matchesStatus;
+      const matchesSearch = !q || norm(w.name).includes(q) || norm(w.matricule).includes(q) || norm(w.department).includes(q) || norm(w.company).includes(q) || norm(w.position).includes(q);
+      const matchesCompany = !companyFilter || w.company === companyFilter;
+      const matchesPosition = !positionFilter || w.position === positionFilter;
+      const matchesRisk = !riskFilter || (w.riskLevel ?? "Modéré") === riskFilter;
+      const matchesApt = !aptFilter || aptKind(w.status) === aptFilter;
+      return matchesSearch && matchesCompany && matchesPosition && matchesRisk && matchesApt;
     });
-  }, [workers, search, statusFilter]);
+  }, [workers, search, companyFilter, positionFilter, riskFilter, aptFilter]);
 
   const handleExcelExport = () => {
     const header = ["Nom", "Matricule", "Entreprise", "Département", "Poste", "Aptitude", "Contrat", "Dernière visite"];
@@ -191,15 +220,10 @@ export default function WorkersPage({
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom, matricule, entreprise…"
                   className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15" />
               </div>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary/40">
-                <option value="Tous">Toutes aptitudes</option>
-                <option value="apte">Apte</option>
-                <option value="restriction">Avec restriction</option>
-                <option value="inapte">Inapte</option>
-                <option value="embauche">En cours d'embauche</option>
-                <option value="fin_contrat">Fin de contrat</option>
-              </select>
+              <FilterSelect value={companyFilter} onChange={setCompanyFilter} allLabel="Entreprise" options={companies.map((c) => ({ value: c, label: c }))} />
+              <FilterSelect value={positionFilter} onChange={setPositionFilter} allLabel="Poste" options={positions.map((p) => ({ value: p, label: p }))} />
+              <FilterSelect value={riskFilter} onChange={setRiskFilter} allLabel="Niveau de risque" options={[{ value: "Élevé", label: "Élevé" }, { value: "Modéré", label: "Modéré" }, { value: "Faible", label: "Faible" }]} />
+              <FilterSelect value={aptFilter} onChange={setAptFilter} allLabel="Aptitude" options={[{ value: "apte", label: "Apte" }, { value: "restriction", label: "Avec restriction" }, { value: "inapte", label: "Inapte" }]} />
               <ExportDropdown onPDF={handlePDFExport} onExcel={handleExcelExport} />
               {can("workers.create") && (
                 <button onClick={onCreate} className="flex h-9 items-center gap-2 rounded-md bg-brand-deep px-3 text-xs font-semibold text-white transition hover:bg-brand-deep/90">
@@ -217,6 +241,7 @@ export default function WorkersPage({
                       <th className="px-6 py-3 text-left font-semibold">Employé</th>
                       <th className="px-6 py-3 text-left font-semibold">Entreprise</th>
                       <th className="px-6 py-3 text-left font-semibold">Poste</th>
+                      <th className="px-6 py-3 text-left font-semibold">Risque</th>
                       <th className="px-6 py-3 text-left font-semibold">Aptitude</th>
                       <th className="px-6 py-3 text-left font-semibold">Contrat</th>
                       <th className="px-6 py-3 text-left font-semibold">Dernière visite</th>
@@ -240,6 +265,9 @@ export default function WorkersPage({
                           </td>
                           <td className="px-6 py-3.5 text-muted-foreground">{worker.company || "—"}</td>
                           <td className="px-6 py-3.5 text-foreground">{worker.position || "—"}</td>
+                          <td className="px-6 py-3.5">
+                            <span className={`inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${riskPill[worker.riskLevel ?? "Modéré"] ?? "bg-muted text-muted-foreground"}`}>{worker.riskLevel ?? "Modéré"}</span>
+                          </td>
                           <td className="px-6 py-3.5">
                             <span className={`inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${aptPill[k]}`}>{worker.status}</span>
                           </td>
@@ -285,7 +313,7 @@ export default function WorkersPage({
                       );
                     }) : (
                       <tr>
-                        <td colSpan={7} className="px-6 py-16 text-center">
+                        <td colSpan={8} className="px-6 py-16 text-center">
                           <p className="font-semibold text-foreground">Aucun employé trouvé</p>
                           <p className="mt-1 text-sm text-muted-foreground">Essayez de modifier votre recherche ou vos filtres.</p>
                         </td>

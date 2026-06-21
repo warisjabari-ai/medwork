@@ -287,6 +287,7 @@ function App() {
           department: wk.department ?? "", position: wk.position ?? "",
           company: wk.company ?? "", residence: wk.residence ?? "",
           contractStatus: wk.contractStatus ?? "actif",
+          riskLevel: wk.riskLevel ?? "Modéré",
           status: wk.status ?? "Aucune visite", lastVisit: wk.lastVisit ?? "—",
         }));
         setWorkers(mapped);
@@ -326,6 +327,7 @@ function App() {
         department: wk.department ?? "", position: wk.position ?? "",
         company: wk.company ?? "", residence: wk.residence ?? "",
         contractStatus: wk.contractStatus ?? "actif",
+        riskLevel: wk.riskLevel ?? "Modéré",
         status: wk.status ?? "Aucune visite",
         lastVisit: wk.lastVisit ?? "—",
       })));

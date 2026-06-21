@@ -29,6 +29,7 @@ router.get("/", requirePermission("workers.view"), async (req, res) => {
         department: w.department ?? "", position: w.position ?? "",
         company: w.company ?? "", residence: w.residence ?? "",
         contractStatus: w.contractStatus,
+        riskLevel: w.riskLevel ?? "Modéré",
         status: last?.aptitude ?? "Aucune visite",
         lastVisit: last?.date ?? "—",
       };
@@ -52,12 +53,12 @@ router.get("/:id", requirePermission("workers.view"), async (req, res) => {
 
 router.post("/", requirePermission("workers.create"), async (req, res) => {
   try {
-    const { name, matricule, department, position, company, residence, contractStatus } = req.body;
+    const { name, matricule, department, position, company, residence, contractStatus, riskLevel } = req.body;
     if (!name?.trim() || !matricule?.trim()) return res.status(400).json({ error: "Nom et matricule requis." });
     const existing = await prisma.worker.findUnique({ where: { matricule } });
     if (existing) return res.status(409).json({ error: "Ce matricule existe déjà." });
     const worker = await prisma.worker.create({
-      data: { name, matricule, department, position, company, residence, contractStatus: contractStatus ?? "actif" },
+      data: { name, matricule, department, position, company, residence, contractStatus: contractStatus ?? "actif", riskLevel: riskLevel ?? "Modéré" },
     });
     res.status(201).json(worker);
   } catch (err) {
@@ -67,10 +68,10 @@ router.post("/", requirePermission("workers.create"), async (req, res) => {
 
 router.put("/:id", requirePermission("workers.edit"), async (req, res) => {
   try {
-    const { name, matricule, department, position, company, residence, contractStatus } = req.body;
+    const { name, matricule, department, position, company, residence, contractStatus, riskLevel } = req.body;
     const worker = await prisma.worker.update({
       where: { id: Number(req.params.id) },
-      data: { name, matricule, department, position, company, residence, contractStatus },
+      data: { name, matricule, department, position, company, residence, contractStatus, riskLevel },
     });
     res.json(worker);
   } catch (err) {

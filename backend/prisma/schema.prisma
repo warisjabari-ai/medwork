@@ -52,6 +52,7 @@ model Worker {
   company        String?
   residence      String?
   contractStatus String   @default("actif") // actif | embauche | fin_contrat
+  riskLevel      String   @default("Modéré") // Faible | Modéré | Élevé
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

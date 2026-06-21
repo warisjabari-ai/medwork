@@ -4,9 +4,28 @@ import type { AppPage } from "../components/Navigation";
 import type { WorkerVisit } from "../types/visit";
 import type { Worker } from "./WorkersPage";
 import {
-  Search, Plus, Download, ChevronDown, ChevronRight, X,
+  Search, Plus, Download, ChevronDown, ChevronRight, X, Filter,
   Stethoscope, Calendar, Pencil, CalendarClock, CalendarCheck, Activity,
+  type LucideIcon,
 } from "lucide-react";
+
+// ─── Filtre déroulant (style chip du design) ─────────────────────────────────
+function FilterSelect({ icon: Ico, value, onChange, allLabel, options }: {
+  icon?: LucideIcon; value: string; onChange: (v: string) => void; allLabel: string; options: { value: string; label: string }[];
+}) {
+  const Ic = Ico ?? Filter;
+  return (
+    <div className="relative">
+      <Ic className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="h-9 appearance-none rounded-md border border-border bg-surface pl-8 pr-7 text-xs font-medium text-foreground outline-none transition hover:bg-muted focus:border-primary/40">
+        <option value="">{allLabel}</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}
 
 // ─── Export helpers ───────────────────────────────────────────────────────────
 function exportCSV(rows: string[][], filename: string) {
@@ -117,7 +136,10 @@ export default function VisitsPage({
 }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [visitSearch, setVisitSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("Tous");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [doctorFilter, setDoctorFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("");
 
   const can = (perm: string): boolean => {
     if (isSuperAdmin || permissions.includes("*")) return true;
@@ -155,12 +177,24 @@ export default function VisitsPage({
     };
   }, [allVisits]);
 
-  const filteredVisits = useMemo(() => sorted.filter((v) => {
-    const q = norm(visitSearch);
-    const matchSearch = !q || norm(v.ref ?? "").includes(q) || norm(workerName(v.workerId)).includes(q) || norm(v.doctor ?? "").includes(q) || norm(v.type).includes(q);
-    const matchType = typeFilter === "Tous" || norm(v.type).includes(norm(typeFilter));
-    return matchSearch && matchType;
-  }), [sorted, visitSearch, typeFilter, workers]);
+  const doctors = useMemo(() => [...new Set(allVisits.map((v) => v.doctor).filter(Boolean))].sort() as string[], [allVisits]);
+
+  const filteredVisits = useMemo(() => {
+    const now = new Date();
+    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); monday.setHours(0, 0, 0, 0);
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const today = todayStr();
+    return sorted.filter((v) => {
+      const q = norm(visitSearch);
+      const matchSearch = !q || norm(v.ref ?? "").includes(q) || norm(workerName(v.workerId)).includes(q) || norm(v.doctor ?? "").includes(q) || norm(v.type).includes(q);
+      const matchType = !typeFilter || norm(v.type).includes(norm(typeFilter));
+      const matchDoctor = !doctorFilter || v.doctor === doctorFilter;
+      const matchStatus = !statusFilter || (statusFilter === "open" ? !v.closed : v.closed);
+      const d = parseDate(v.date);
+      const matchPeriod = !periodFilter || (periodFilter === "today" ? v.date === today : periodFilter === "week" ? d >= monday.getTime() : periodFilter === "month" ? d >= firstOfMonth : true);
+      return matchSearch && matchType && matchDoctor && matchStatus && matchPeriod;
+    });
+  }, [sorted, visitSearch, typeFilter, doctorFilter, statusFilter, periodFilter, workers]);
 
   const handleExcelExport = () => {
     const header = ["Référence", "Employé", "Matricule", "Date", "Type", "Médecin", "Aptitude", "Statut"];
@@ -244,13 +278,10 @@ export default function VisitsPage({
                   <input value={visitSearch} onChange={(e) => setVisitSearch(e.target.value)} placeholder="N° de consultation, employé, médecin…"
                     className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15" />
                 </div>
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary/40">
-                  <option value="Tous">Tous les types</option>
-                  <option value="embauche">Embauche</option>
-                  <option value="périodique">Périodique</option>
-                  <option value="reprise">Reprise</option>
-                  <option value="surveillance">Surveillance renforcée</option>
-                </select>
+                <FilterSelect value={typeFilter} onChange={setTypeFilter} allLabel="Type" options={[{ value: "embauche", label: "Embauche" }, { value: "périodique", label: "Périodique" }, { value: "reprise", label: "Reprise" }, { value: "surveillance", label: "Surveillance renforcée" }, { value: "demande", label: "À la demande" }]} />
+                <FilterSelect value={doctorFilter} onChange={setDoctorFilter} allLabel="Médecin" options={doctors.map((d) => ({ value: d, label: d }))} />
+                <FilterSelect value={statusFilter} onChange={setStatusFilter} allLabel="Statut" options={[{ value: "open", label: "Ouverte" }, { value: "closed", label: "Terminée" }]} />
+                <FilterSelect value={periodFilter} onChange={setPeriodFilter} allLabel="Période" options={[{ value: "today", label: "Aujourd'hui" }, { value: "week", label: "Cette semaine" }, { value: "month", label: "Ce mois" }]} />
                 <ExportDropdown onPDF={handlePDFExport} onExcel={handleExcelExport} />
                 {can("visits.create") && (
                   <button onClick={() => setShowModal(true)} className="flex h-9 items-center gap-2 rounded-md bg-brand-deep px-3 text-xs font-semibold text-white transition hover:bg-brand-deep/90">
