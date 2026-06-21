@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
-import { Sidebar, AppHeader, Icon, icons } from "../components/Navigation";
+import { Sidebar, AppHeader } from "../components/Navigation";
 import type { AppPage } from "../components/Navigation";
+import {
+  Search, Plus, Download, ChevronDown, Pencil, Trash2,
+  CheckCircle2, RotateCcw, DoorOpen,
+} from "lucide-react";
 
 // ─── Export helpers ───────────────────────────────────────────────────────────
 function exportCSV(rows: string[][], filename: string) {
-  const bom = "\uFEFF";
+  const bom = "﻿";
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([bom + csv], { type: "text/csv;charset=utf-8;" }));
@@ -16,13 +20,13 @@ function ExportDropdown({ onPDF, onExcel }: { onPDF: () => void; onExcel: () => 
   return (
     <div className="relative">
       <button onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition">
-        <Icon d={icons.download} size={14} />Exporter<Icon d={icons.chevDown} size={12} />
+        className="flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-3 text-xs font-medium text-foreground transition hover:bg-muted">
+        <Download className="size-4" />Exporter<ChevronDown className="size-3.5 text-muted-foreground" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-          <button onClick={() => { onPDF(); setOpen(false); }} className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition">📄 Export PDF</button>
-          <button onClick={() => { onExcel(); setOpen(false); }} className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 border-t border-slate-100 transition">📊 Export Excel</button>
+        <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-surface shadow-elevated">
+          <button onClick={() => { onPDF(); setOpen(false); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground transition hover:bg-muted">Export PDF</button>
+          <button onClick={() => { onExcel(); setOpen(false); }} className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-sm text-foreground transition hover:bg-muted">Export Excel</button>
         </div>
       )}
     </div>
@@ -39,7 +43,7 @@ export type Worker = {
   status: string;
   lastVisit: string;
   residence: string;
-  contractStatus?: "actif" | "embauche" | "fin_contrat"; // statut contractuel
+  contractStatus?: "actif" | "embauche" | "fin_contrat";
 };
 
 type Props = {
@@ -62,47 +66,31 @@ type Props = {
   onOpenVisit?: (visitId: number, workerId: number) => void;
 };
 
-function normalizeText(text: string) {
-  return text.trim().toLowerCase();
-}
+const norm = (t: string) => (t ?? "").trim().toLowerCase();
+const initialsOf = (name: string) => name.split(" ").map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
-function getStatusStyle(status: string) {
-  const s = normalizeText(status);
-  if (s === "apte") return { dot: "bg-green-500", badge: "bg-green-50 text-green-700 ring-green-200" };
-  if (s.includes("restriction")) return { dot: "bg-orange-500", badge: "bg-orange-50 text-orange-700 ring-orange-200" };
-  return { dot: "bg-red-500", badge: "bg-red-50 text-red-700 ring-red-200" };
+// Classe une aptitude : apte (vert) / restriction (orange) / inapte (rouge)
+function aptKind(status: string): "apte" | "restriction" | "inapte" {
+  const s = norm(status);
+  if (s.includes("inapte")) return "inapte";
+  if (s.includes("restriction") || s.includes("réserve") || s.includes("reserve") || s.includes("surveil")) return "restriction";
+  return "apte";
 }
-
-function getContractBadge(cs?: Worker["contractStatus"]) {
-  if (cs === "embauche") return { label: "En cours d'embauche", cls: "bg-blue-50 text-blue-700 ring-blue-200" };
-  if (cs === "fin_contrat") return { label: "Fin de contrat", cls: "bg-slate-100 text-slate-500 ring-slate-300" };
-  return null;
-}
+const aptPill: Record<string, string> = {
+  apte: "bg-success/10 text-success",
+  restriction: "bg-warning/10 text-warning",
+  inapte: "bg-danger/10 text-danger",
+};
 
 export default function WorkersPage({
-  workers,
-  currentPage,
-  onNavigate,
-  onSelect,
-  onCreate,
-  onEdit,
-  onDelete,
-  onSetContractStatus,
-  onLogout,
-  userName,
-  userRole,
-  userPhoto,
-  isSuperAdmin,
-  permissions = [],
-  searchData,
-  onOpenWorker,
-  onOpenVisit,
+  workers, currentPage, onNavigate, onSelect, onCreate, onEdit, onDelete,
+  onSetContractStatus, onLogout, userName, userRole, userPhoto, isSuperAdmin,
+  permissions = [], searchData, onOpenWorker, onOpenVisit,
 }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tous");
 
-  // Helpers de permission
-    const can = (perm: string): boolean => {
+  const can = (perm: string): boolean => {
     if (isSuperAdmin || permissions.includes("*")) return true;
     if (permissions.includes(perm)) return true;
     const parts = perm.split(".");
@@ -112,269 +100,202 @@ export default function WorkersPage({
     return false;
   };
 
+  // KPI
+  const kpi = useMemo(() => {
+    let apte = 0, restriction = 0, inapte = 0;
+    workers.forEach((w) => {
+      const k = aptKind(w.status);
+      if (k === "apte") apte++; else if (k === "restriction") restriction++; else inapte++;
+    });
+    const total = workers.length || 1;
+    return {
+      total: workers.length, apte, restriction, inapte,
+      aptePct: Math.round((apte / total) * 100),
+      restPct: Math.round((restriction / total) * 100),
+      inaptePct: Math.round((inapte / total) * 100),
+    };
+  }, [workers]);
+
   const filteredWorkers = useMemo(() => {
-    const q = normalizeText(search);
+    const q = norm(search);
     return workers.filter((w) => {
-      const matchesSearch =
-        !q ||
-        normalizeText(w.name).includes(q) ||
-        normalizeText(w.matricule).includes(q) ||
-        normalizeText(w.department).includes(q);
+      const matchesSearch = !q || norm(w.name).includes(q) || norm(w.matricule).includes(q) || norm(w.department).includes(q) || norm(w.company).includes(q);
       const matchesStatus =
         statusFilter === "Tous" ||
         (statusFilter === "embauche" ? w.contractStatus === "embauche" :
          statusFilter === "fin_contrat" ? w.contractStatus === "fin_contrat" :
-         normalizeText(w.status) === normalizeText(statusFilter));
+         aptKind(w.status) === statusFilter);
       return matchesSearch && matchesStatus;
     });
   }, [workers, search, statusFilter]);
 
   const handleExcelExport = () => {
-    const header = ["Nom", "Matricule", "Entreprise", "Département", "Poste", "Statut médical", "Statut contrat", "Dernière visite"];
+    const header = ["Nom", "Matricule", "Entreprise", "Département", "Poste", "Aptitude", "Contrat", "Dernière visite"];
     const rows = filteredWorkers.map((w) => [
-      w.name, w.matricule, w.company ?? "—", w.department ?? "—", w.position ?? "—",
-      w.status, w.contractStatus === "embauche" ? "En cours d'embauche" : w.contractStatus === "fin_contrat" ? "Fin de contrat" : "En activité",
+      w.name, w.matricule, w.company ?? "—", w.department ?? "—", w.position ?? "—", w.status,
+      w.contractStatus === "embauche" ? "En cours d'embauche" : w.contractStatus === "fin_contrat" ? "Fin de contrat" : "En activité",
       w.lastVisit ?? "—",
     ]);
-    exportCSV([header, ...rows], `travailleurs_${new Date().toLocaleDateString("fr-FR").replace(/\//g, "-")}`);
+    exportCSV([header, ...rows], `employes_${new Date().toLocaleDateString("fr-FR").replace(/\//g, "-")}`);
   };
 
   const handlePDFExport = () => {
-    const rows = filteredWorkers.map((w) => `
-      <tr>
-        <td>${w.name}</td>
-        <td>${w.matricule}</td>
-        <td>${w.company ?? "—"}</td>
-        <td>${w.department ?? "—"}</td>
-        <td>${w.position ?? "—"}</td>
-        <td>${w.status}</td>
-        <td>${w.contractStatus === "embauche" ? "En cours d'embauche" : w.contractStatus === "fin_contrat" ? "Fin de contrat" : "En activité"}</td>
-        <td>${w.lastVisit ?? "—"}</td>
-      </tr>`).join("");
-
-    const html = `
-      <style>
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #1e293b; }
-        h1 { font-size: 16px; font-weight: 800; color: #0f2d5a; margin-bottom: 4px; }
-        p { font-size: 11px; color: #64748b; margin-bottom: 16px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f1f5f9; text-align: left; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
-        tr:nth-child(even) td { background: #f8fafc; }
-        @page { margin: 14mm 12mm; }
-      </style>
-      <h1>Liste des travailleurs</h1>
-      <p>Exporté le ${new Date().toLocaleDateString("fr-FR")} · ${filteredWorkers.length} travailleur(s)</p>
-      <table>
-        <thead><tr>
-          <th>Nom</th><th>Matricule</th><th>Entreprise</th><th>Département</th>
-          <th>Poste</th><th>Statut médical</th><th>Contrat</th><th>Dernière visite</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-
+    const rows = filteredWorkers.map((w) => `<tr><td>${w.name}</td><td>${w.matricule}</td><td>${w.company ?? "—"}</td><td>${w.department ?? "—"}</td><td>${w.position ?? "—"}</td><td>${w.status}</td><td>${w.lastVisit ?? "—"}</td></tr>`).join("");
+    const html = `<style>body{font-family:Arial,sans-serif;font-size:11px;color:#1e293b}h1{font-size:16px;font-weight:800;color:#0F4C81;margin-bottom:4px}p{font-size:11px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:2px solid #e2e8f0}td{padding:7px 10px;border-bottom:1px solid #f1f5f9}@page{margin:14mm 12mm}</style><h1>Liste des employés</h1><p>Exporté le ${new Date().toLocaleDateString("fr-FR")} · ${filteredWorkers.length} employé(s)</p><table><thead><tr><th>Nom</th><th>Matricule</th><th>Entreprise</th><th>Département</th><th>Poste</th><th>Aptitude</th><th>Dernière visite</th></tr></thead><tbody>${rows}</tbody></table>`;
     const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      setTimeout(() => { win.print(); win.close(); }, 500);
-    }
+    if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => { win.print(); win.close(); }, 500); }
   };
 
+  const kpiCards = [
+    { label: "Effectif total", value: kpi.total, chip: null, chipClass: "" },
+    { label: "Aptes", value: kpi.apte, chip: `${kpi.aptePct}%`, chipClass: "bg-success/10 text-success" },
+    { label: "Restrictions", value: kpi.restriction, chip: `${kpi.restPct}%`, chipClass: "bg-warning/10 text-warning" },
+    { label: "Inaptes", value: kpi.inapte, chip: `${kpi.inaptePct}%`, chipClass: "bg-danger/10 text-danger" },
+  ];
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar currentPage={currentPage} onNavigate={onNavigate} onLogout={onLogout} userName={userName} userRole={userRole} userPhoto={userPhoto} isSuperAdmin={isSuperAdmin} permissions={permissions} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader title="Travailleurs" onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
+        <AppHeader onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="rounded-2xl bg-white shadow-sm overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-[1400px] p-6 lg:p-8">
 
-            {/* Barre d'outils */}
-            <div className="flex flex-wrap items-end gap-4 border-b border-slate-100 px-6 py-4">
-              {/* Recherche */}
-              <div className="flex-1 min-w-[200px]">
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Recherche
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Icon d={icons.search} size={14} />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Nom, matricule ou département"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20"
-                  />
-                </div>
-              </div>
-
-              {/* Filtre statut */}
-              <div className="min-w-[160px]">
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Statut
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-4 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white"
-                >
-                  <option value="Tous">Tous les statuts</option>
-                  <option value="Apte">Apte</option>
-                  <option value="Apte avec restriction">Apte avec restriction</option>
-                  <option value="A surveiller">A surveiller</option>
-                  <option value="Inapte">Inapte</option>
-                  <option value="embauche">En cours d'embauche</option>
-                  <option value="fin_contrat">Fin de contrat</option>
-                  <option value="Apte">Apte</option>
-                  <option value="Restriction">Restriction</option>
-                  <option value="A surveiller">À surveiller</option>
-                </select>
-              </div>
-
-              {/* Compteur + boutons */}
-              <div className="ml-auto flex items-center gap-3 self-end">
-                <span className="text-sm text-slate-400">
-                  <span className="font-bold text-medwork-navy">{filteredWorkers.length}</span>{" "}
-                  travailleur{filteredWorkers.length > 1 ? "s" : ""}
-                </span>
-                <ExportDropdown onPDF={handlePDFExport} onExcel={handleExcelExport} />
-                {can("workers.create") && (
-                  <button
-                    onClick={onCreate}
-                    className="rounded-xl bg-medwork-cyan px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                  >
-                    + Nouveau travailleur
-                  </button>
-                )}
+            {/* En-tête */}
+            <div className="mb-8 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Employés</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Annuaire global des salariés suivis par votre service de santé au travail.</p>
               </div>
             </div>
 
+            {/* KPI */}
+            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+              {kpiCards.map((k) => (
+                <div key={k.label} className="rounded-xl border border-border bg-surface p-5 shadow-card">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</p>
+                    {k.chip && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${k.chipClass}`}>{k.chip}</span>}
+                  </div>
+                  <div className="mt-3 font-display text-[28px] font-bold leading-none tracking-tight text-foreground tabular-nums">{k.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Barre d'outils */}
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[240px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom, matricule, entreprise…"
+                  className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15" />
+              </div>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary/40">
+                <option value="Tous">Toutes aptitudes</option>
+                <option value="apte">Apte</option>
+                <option value="restriction">Avec restriction</option>
+                <option value="inapte">Inapte</option>
+                <option value="embauche">En cours d'embauche</option>
+                <option value="fin_contrat">Fin de contrat</option>
+              </select>
+              <ExportDropdown onPDF={handlePDFExport} onExcel={handleExcelExport} />
+              {can("workers.create") && (
+                <button onClick={onCreate} className="flex h-9 items-center gap-2 rounded-md bg-brand-deep px-3 text-xs font-semibold text-white transition hover:bg-brand-deep/90">
+                  <Plus className="size-4" /> Ajouter un employé
+                </button>
+              )}
+            </div>
+
             {/* Tableau */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="bg-slate-50 text-left">
-                    {["Nom complet", "Matricule", "Entreprise", "Département", "Poste", "Statut médical", "Contrat", "Dernière visite", "Actions"].map((h) => (
-                      <th key={h} className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredWorkers.length > 0 ? (
-                    filteredWorkers.map((worker) => {
-                      const { dot, badge } = getStatusStyle(worker.status);
-                      const contractBadge = getContractBadge(worker.contractStatus);
-                      const isFinContrat = worker.contractStatus === "fin_contrat";
+            <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-6 py-3 text-left font-semibold">Employé</th>
+                      <th className="px-6 py-3 text-left font-semibold">Entreprise</th>
+                      <th className="px-6 py-3 text-left font-semibold">Poste</th>
+                      <th className="px-6 py-3 text-left font-semibold">Aptitude</th>
+                      <th className="px-6 py-3 text-left font-semibold">Contrat</th>
+                      <th className="px-6 py-3 text-left font-semibold">Dernière visite</th>
+                      <th className="px-6 py-3 text-right font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredWorkers.length > 0 ? filteredWorkers.map((worker) => {
+                      const k = aptKind(worker.status);
+                      const isFin = worker.contractStatus === "fin_contrat";
                       return (
-                        <tr key={worker.id} className={`text-sm transition hover:bg-slate-50/80 ${isFinContrat ? "opacity-60" : ""}`}>
-                          <td className="cursor-pointer px-5 py-3.5 font-semibold text-medwork-navy hover:underline" onClick={() => onSelect(worker)}>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {worker.name}
-                              {contractBadge && (
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset ${contractBadge.cls}`}>
-                                  {contractBadge.label}
-                                </span>
-                              )}
-                            </div>
+                        <tr key={worker.id} className={`transition-colors hover:bg-accent ${isFin ? "opacity-60" : ""}`}>
+                          <td className="px-6 py-3.5">
+                            <button onClick={() => onSelect(worker)} className="flex items-center gap-3 text-left">
+                              <div className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-deep to-brand-vibrant text-[11px] font-bold text-white">{initialsOf(worker.name)}</div>
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-foreground hover:text-primary">{worker.name}</p>
+                                <p className="truncate font-mono text-[11px] text-muted-foreground">{worker.matricule}</p>
+                              </div>
+                            </button>
                           </td>
-                          <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{worker.matricule}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{worker.company}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{worker.department}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{worker.position}</td>
-                          <td className="px-5 py-3.5">
-                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${badge}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-                              {worker.status}
-                            </span>
+                          <td className="px-6 py-3.5 text-muted-foreground">{worker.company || "—"}</td>
+                          <td className="px-6 py-3.5 text-foreground">{worker.position || "—"}</td>
+                          <td className="px-6 py-3.5">
+                            <span className={`inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${aptPill[k]}`}>{worker.status}</span>
                           </td>
-                          {/* Statut du contrat */}
-                          <td className="px-5 py-3.5">
+                          <td className="px-6 py-3.5">
                             {worker.contractStatus === "embauche" ? (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
-                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                En cours d'embauche
-                              </span>
+                              <span className="inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-brand-vibrant/10 text-brand-vibrant">En embauche</span>
                             ) : worker.contractStatus === "fin_contrat" ? (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-slate-300">
-                                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                Fin de contrat
-                              </span>
+                              <span className="inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-muted text-muted-foreground">Fin de contrat</span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">
-                                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                                En activité
-                              </span>
+                              <span className="inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-success/10 text-success">En activité</span>
                             )}
                           </td>
-                          <td className="px-5 py-3.5 text-slate-500">{worker.lastVisit}</td>
-                          <td className="px-5 py-3.5">
-                            <div className="flex items-center gap-1.5">
+                          <td className="px-6 py-3.5 tabular-nums text-muted-foreground">{worker.lastVisit || "—"}</td>
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center justify-end gap-1.5">
                               {can("workers.edit") && (
-                                <button onClick={() => onEdit(worker)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-medwork-cyan hover:text-medwork-cyan">
-                                  ✏️
+                                <button onClick={() => onEdit(worker)} title="Modifier" className="grid size-7 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground">
+                                  <Pencil className="size-3.5" />
                                 </button>
                               )}
-                              {/* Statut contractuel — nécessite workers.edit */}
-                              {can("workers.edit") && (
-                                worker.contractStatus === "embauche" ? (
-                                  <button
-                                    onClick={() => onSetContractStatus(worker.id, "actif")}
-                                    title="Valider l'embauche → Actif"
-                                    className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 shadow-sm transition hover:bg-blue-500 hover:text-white hover:border-blue-500"
-                                  >
-                                    ✅ Valider
-                                  </button>
-                                ) : worker.contractStatus === "fin_contrat" ? (
-                                  <button
-                                    onClick={() => onSetContractStatus(worker.id, "actif")}
-                                    title="Réactiver ce travailleur"
-                                    className="rounded-lg border border-green-200 bg-white px-2.5 py-1.5 text-xs font-medium text-green-700 shadow-sm transition hover:bg-green-500 hover:text-white hover:border-green-500"
-                                  >
-                                    🔄 Réactiver
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => { if (window.confirm(`Marquer ${worker.name} en fin de contrat ?`)) onSetContractStatus(worker.id, "fin_contrat"); }}
-                                    title="Fin de contrat"
-                                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-600"
-                                  >
-                                    🚪
-                                  </button>
-                                )
-                              )}
+                              {can("workers.edit") && (worker.contractStatus === "embauche" ? (
+                                <button onClick={() => onSetContractStatus(worker.id, "actif")} title="Valider l'embauche" className="grid size-7 place-items-center rounded-md text-brand-vibrant transition hover:bg-brand-vibrant/10">
+                                  <CheckCircle2 className="size-3.5" />
+                                </button>
+                              ) : worker.contractStatus === "fin_contrat" ? (
+                                <button onClick={() => onSetContractStatus(worker.id, "actif")} title="Réactiver" className="grid size-7 place-items-center rounded-md text-success transition hover:bg-success/10">
+                                  <RotateCcw className="size-3.5" />
+                                </button>
+                              ) : (
+                                <button onClick={() => { if (window.confirm(`Marquer ${worker.name} en fin de contrat ?`)) onSetContractStatus(worker.id, "fin_contrat"); }} title="Fin de contrat" className="grid size-7 place-items-center rounded-md text-muted-foreground transition hover:bg-warning/10 hover:text-warning">
+                                  <DoorOpen className="size-3.5" />
+                                </button>
+                              ))}
                               {can("workers.delete") && (
-                                <button
-                                  onClick={() => { if (window.confirm(`Supprimer définitivement ${worker.name} ?`)) onDelete(worker.id); }}
-                                  className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-500 shadow-sm transition hover:bg-red-500 hover:text-white hover:border-red-500"
-                                >
-                                  🗑️
+                                <button onClick={() => { if (window.confirm(`Supprimer définitivement ${worker.name} ?`)) onDelete(worker.id); }} title="Supprimer" className="grid size-7 place-items-center rounded-md text-muted-foreground transition hover:bg-danger/10 hover:text-danger">
+                                  <Trash2 className="size-3.5" />
                                 </button>
                               )}
-                              {!can("workers.edit") && !can("workers.delete") && (
-                                <span className="text-[10px] text-slate-400 italic">Lecture seule</span>
-                              )}
+                              {!can("workers.edit") && !can("workers.delete") && <span className="text-[10px] italic text-muted-foreground">Lecture seule</span>}
                             </div>
                           </td>
                         </tr>
                       );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={9} className="px-5 py-16 text-center">
-                        <p className="text-3xl mb-2">🔍</p>
-                        <p className="font-semibold text-slate-600">Aucun travailleur trouvé</p>
-                        <p className="mt-1 text-sm text-slate-400">Essayez de modifier vos filtres.</p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    }) : (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-16 text-center">
+                          <p className="font-semibold text-foreground">Aucun employé trouvé</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Essayez de modifier votre recherche ou vos filtres.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
           </div>
         </main>
       </div>
