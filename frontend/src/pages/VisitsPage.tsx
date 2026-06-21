@@ -1,17 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { Sidebar, AppHeader, Icon, icons } from "../components/Navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Sidebar, AppHeader } from "../components/Navigation";
 import type { AppPage } from "../components/Navigation";
 import type { WorkerVisit } from "../types/visit";
 import type { Worker } from "./WorkersPage";
+import {
+  Search, Plus, Download, ChevronDown, ChevronRight, X,
+  Stethoscope, Calendar, Pencil, CalendarClock, CalendarCheck, Activity,
+} from "lucide-react";
 
 // ─── Export helpers ───────────────────────────────────────────────────────────
 function exportCSV(rows: string[][], filename: string) {
-  const bom = "\uFEFF";
+  const bom = "﻿";
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([bom + csv], { type: "text/csv;charset=utf-8;" }));
-  a.download = filename + ".csv";
-  a.click();
+  a.download = filename + ".csv"; a.click();
 }
 
 function ExportDropdown({ onPDF, onExcel }: { onPDF: () => void; onExcel: () => void }) {
@@ -19,21 +22,13 @@ function ExportDropdown({ onPDF, onExcel }: { onPDF: () => void; onExcel: () => 
   return (
     <div className="relative">
       <button onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition">
-        <Icon d={icons.download} size={14} />
-        Exporter
-        <Icon d={icons.chevDown} size={12} />
+        className="flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-3 text-xs font-medium text-foreground transition hover:bg-muted">
+        <Download className="size-4" />Exporter<ChevronDown className="size-3.5 text-muted-foreground" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 w-40 rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-          <button onClick={() => { onPDF(); setOpen(false); }}
-            className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition">
-            📄 Export PDF
-          </button>
-          <button onClick={() => { onExcel(); setOpen(false); }}
-            className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 border-t border-slate-100 transition">
-            📊 Export Excel
-          </button>
+        <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-surface shadow-elevated">
+          <button onClick={() => { onPDF(); setOpen(false); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground transition hover:bg-muted">Export PDF</button>
+          <button onClick={() => { onExcel(); setOpen(false); }} className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-sm text-foreground transition hover:bg-muted">Export Excel</button>
         </div>
       )}
     </div>
@@ -51,147 +46,79 @@ type Props = {
   userPhoto?: string;
   isSuperAdmin?: boolean;
   permissions?: string[];
+  searchData?: import("../components/Navigation").SearchableData;
+  onOpenWorker?: (id: number) => void;
   onNewVisitForWorker: (worker: Worker) => void;
   onSelectWorker: (worker: Worker) => void;
   onEditVisit: (visit: WorkerVisit, worker: Worker) => void;
-  // Ouvrir directement une visite en lecture dans l'historique du travailleur
   onOpenVisit: (visit: WorkerVisit, worker: Worker) => void;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const norm = (t: string) => (t ?? "").trim().toLowerCase();
+const initialsOf = (name: string) => name.split(" ").map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 function parseDate(str: string): number {
-  const parts = str.split("/");
-  if (parts.length !== 3) return 0;
-  return new Date(+parts[2], +parts[1] - 1, +parts[0]).getTime();
+  const p = (str ?? "").split("/");
+  if (p.length !== 3) return 0;
+  return new Date(+p[2], +p[1] - 1, +p[0]).getTime();
+}
+function todayStr() {
+  const t = new Date();
+  return `${String(t.getDate()).padStart(2, "0")}/${String(t.getMonth() + 1).padStart(2, "0")}/${t.getFullYear()}`;
 }
 
-function getAptitudeBadge(aptitude: string) {
-  const v = aptitude.trim().toLowerCase();
-  if (v === "apte") return "bg-green-50 text-green-700 ring-green-200";
-  if (v.includes("restriction")) return "bg-orange-50 text-orange-700 ring-orange-200";
-  if (v.includes("surveiller") || v.includes("inapte")) return "bg-red-50 text-red-700 ring-red-200";
-  return "bg-sky-50 text-sky-700 ring-sky-200";
-}
-
-function getAptitudeDot(aptitude: string) {
-  const v = aptitude.trim().toLowerCase();
-  if (v === "apte") return "bg-green-500";
-  if (v.includes("restriction")) return "bg-orange-500";
-  return "bg-red-500";
-}
-
-// ─── Modal sélection travailleur ──────────────────────────────────────────────
-function WorkerSelectModal({
-  workers,
-  onSelect,
-  onClose,
-}: {
-  workers: Worker[];
-  onSelect: (w: Worker) => void;
-  onClose: () => void;
-}) {
+// ─── Modal sélection employé ─────────────────────────────────────────────────
+function WorkerSelectModal({ workers, onSelect, onClose }: { workers: Worker[]; onSelect: (w: Worker) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
-
   useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    // Délai pour éviter que le click qui ouvre le modal ne le referme aussitôt
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
     const timer = setTimeout(() => document.addEventListener("mousedown", h), 100);
     return () => { clearTimeout(timer); document.removeEventListener("mousedown", h); };
   }, [onClose]);
-
-  const filtered = workers.filter((w) =>
-    w.name.toLowerCase().includes(search.toLowerCase()) ||
-    w.matricule.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filtered = workers.filter((w) => norm(w.name).includes(norm(search)) || norm(w.matricule).includes(norm(search)));
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div ref={ref} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between bg-medwork-navy px-5 py-4">
+      <div ref={ref} className="w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-elevated">
+        <div className="flex items-center justify-between bg-brand-deep px-5 py-4">
           <div>
-            <h2 className="text-base font-bold text-white">Nouvelle visite médicale</h2>
-            <p className="mt-0.5 text-xs text-white/60">Sélectionnez le travailleur concerné</p>
+            <h2 className="font-display text-base font-bold text-white">Nouvelle consultation</h2>
+            <p className="mt-0.5 text-xs text-white/70">Sélectionnez l'employé concerné</p>
           </div>
-          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 text-sm">✕</button>
+          <button onClick={onClose} className="grid size-7 place-items-center rounded-full bg-white/20 text-white transition hover:bg-white/30"><X className="size-4" /></button>
         </div>
-
-        {/* Recherche */}
-        <div className="border-b border-slate-100 px-4 py-3">
+        <div className="border-b border-border px-4 py-3">
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Icon d={icons.search} size={14} />
-            </span>
-            <input
-              autoFocus
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher par nom ou matricule…"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20"
-            />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher par nom ou matricule…"
+              className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/15" />
           </div>
         </div>
-
-        {/* Liste */}
-        <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
-          {filtered.length > 0 ? (
-            filtered.map((w) => {
-              const initials = w.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
-              return (
-                <button
-                  key={w.id}
-                  onClick={() => onSelect(w)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-medwork-navy text-xs font-bold text-white">
-                    {initials}
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-800">{w.name}</p>
-                    <p className="text-xs text-slate-400">{w.matricule} · {w.department}</p>
-                  </span>
-                  <span className="shrink-0">
-                    <Icon d={icons.chevRight} size={14} />
-                  </span>
-                </button>
-              );
-            })
-          ) : (
-            <div className="px-4 py-8 text-center text-sm text-slate-400">Aucun travailleur trouvé.</div>
-          )}
+        <div className="max-h-72 divide-y divide-border overflow-y-auto">
+          {filtered.length > 0 ? filtered.map((w) => (
+            <button key={w.id} onClick={() => onSelect(w)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-accent">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-deep to-brand-vibrant text-[11px] font-bold text-white">{initialsOf(w.name)}</span>
+              <span className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">{w.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{w.matricule} · {w.department}</p>
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            </button>
+          )) : <div className="px-4 py-8 text-center text-sm text-muted-foreground">Aucun employé trouvé.</div>}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── VisitsPage ───────────────────────────────────────────────────────────────
 export default function VisitsPage({
-  allVisits,
-  workers,
-  currentPage,
-  onNavigate,
-  onLogout,
-  onNewVisitForWorker,
-  onSelectWorker,
-  onEditVisit,
-  onOpenVisit,
-  userName,
-  userRole,
-  userPhoto,
-  isSuperAdmin,
-  permissions = [],
-  searchData,
-  onOpenWorker,
+  allVisits, workers, currentPage, onNavigate, onLogout, onNewVisitForWorker,
+  onEditVisit, onOpenVisit, userName, userRole, userPhoto, isSuperAdmin,
+  permissions = [], searchData, onOpenWorker,
 }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [visitSearch, setVisitSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("Tous");
 
-  // Helper permission
   const can = (perm: string): boolean => {
     if (isSuperAdmin || permissions.includes("*")) return true;
     if (permissions.includes(perm)) return true;
@@ -199,249 +126,202 @@ export default function VisitsPage({
     for (let i = 1; i < parts.length; i++) {
       if (permissions.includes(parts.slice(0, i).join("."))) return true;
     }
-    return permissions.some(p => p === perm || p.startsWith(perm + "."));
+    return permissions.some((p) => p === perm || p.startsWith(perm + "."));
   };
 
-  // Trier les visites du plus récent au plus ancien (par date, puis par id)
-  const sorted = [...allVisits].sort((a, b) => {
-    const dateDiff = parseDate(b.date) - parseDate(a.date);
-    return dateDiff !== 0 ? dateDiff : b.id - a.id;
-  });
+  const workerName = (id: number) => workers.find((w) => w.id === id)?.name ?? "Inconnu";
+  const workerObj = (id: number) => workers.find((w) => w.id === id) ?? null;
+  const workerCompany = (id: number) => workers.find((w) => w.id === id)?.company ?? "—";
 
-  // Retrouver le nom du travailleur depuis son id
-  const workerName = (workerId: number) =>
-    workers.find((w) => w.id === workerId)?.name ?? "Inconnu";
+  const sorted = useMemo(
+    () => [...allVisits].sort((a, b) => (parseDate(b.date) - parseDate(a.date)) || (b.id - a.id)),
+    [allVisits]
+  );
 
-  const workerObj = (workerId: number) =>
-    workers.find((w) => w.id === workerId) ?? null;
+  // KPI
+  const kpi = useMemo(() => {
+    const today = todayStr();
+    const now = new Date();
+    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); monday.setHours(0, 0, 0, 0);
+    const tc = (kw: string) => allVisits.filter((v) => norm(v.type).includes(kw)).length;
+    return {
+      today: allVisits.filter((v) => v.date === today).length,
+      week: allVisits.filter((v) => parseDate(v.date) >= monday.getTime()).length,
+      open: allVisits.filter((v) => !v.closed).length,
+      total: allVisits.length,
+      embauche: tc("embauche"),
+      periodique: tc("périodique") + tc("periodique"),
+      reprise: tc("reprise"),
+    };
+  }, [allVisits]);
 
-  // Filtrage par référence, nom de travailleur, médecin ou type de visite
-  const filteredVisits = sorted.filter((v) => {
-    if (!visitSearch.trim()) return true;
-    const q = visitSearch.toLowerCase();
-    return (
-      (v.ref ?? "").toLowerCase().includes(q) ||
-      workerName(v.workerId).toLowerCase().includes(q) ||
-      (v.doctor ?? "").toLowerCase().includes(q) ||
-      (v.type ?? "").toLowerCase().includes(q)
-    );
-  });
+  const filteredVisits = useMemo(() => sorted.filter((v) => {
+    const q = norm(visitSearch);
+    const matchSearch = !q || norm(v.ref ?? "").includes(q) || norm(workerName(v.workerId)).includes(q) || norm(v.doctor ?? "").includes(q) || norm(v.type).includes(q);
+    const matchType = typeFilter === "Tous" || norm(v.type).includes(norm(typeFilter));
+    return matchSearch && matchType;
+  }), [sorted, visitSearch, typeFilter, workers]);
 
-  // Export Excel
   const handleExcelExport = () => {
-    const header = ["Référence", "Travailleur", "Matricule", "Date", "Type de visite", "Médecin", "Aptitude", "Prochaine visite", "Statut"];
-    const rows = filteredVisits.map((v) => {
-      const wk = workerObj(v.workerId);
-      return [v.ref ?? "—", workerName(v.workerId), wk?.matricule ?? "—", v.date, v.type, v.doctor ?? "—", v.aptitude, v.nextVisit ?? "—", v.closed ? "Clôturé" : "En cours"];
-    });
-    exportCSV([header, ...rows], `visites_${new Date().toLocaleDateString("fr-FR").replace(/\//g, "-")}`);
+    const header = ["Référence", "Employé", "Matricule", "Date", "Type", "Médecin", "Aptitude", "Statut"];
+    const rows = filteredVisits.map((v) => { const wk = workerObj(v.workerId); return [v.ref ?? "—", workerName(v.workerId), wk?.matricule ?? "—", v.date, v.type, v.doctor ?? "—", v.aptitude, v.closed ? "Terminée" : "Ouverte"]; });
+    exportCSV([header, ...rows], `consultations_${new Date().toLocaleDateString("fr-FR").replace(/\//g, "-")}`);
   };
-
-  // Export PDF
   const handlePDFExport = () => {
-    const rows = filteredVisits.map((v) => {
-      const wk = workerObj(v.workerId);
-      return `<tr>
-        <td>${v.ref ?? "—"}</td>
-        <td>${workerName(v.workerId)}</td>
-        <td>${wk?.matricule ?? "—"}</td>
-        <td>${v.date}</td>
-        <td>${v.type}</td>
-        <td>${v.doctor ?? "—"}</td>
-        <td>${v.aptitude}</td>
-        <td>${v.nextVisit ?? "—"}</td>
-        <td>${v.closed ? "Clôturé" : "En cours"}</td>
-      </tr>`;
-    }).join("");
-
-    const html = `
-      <style>
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #1e293b; }
-        h1 { font-size: 16px; font-weight: 800; color: #0f2d5a; margin-bottom: 4px; }
-        p { font-size: 11px; color: #64748b; margin-bottom: 16px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f1f5f9; text-align: left; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
-        tr:nth-child(even) td { background: #f8fafc; }
-        @page { margin: 14mm 12mm; }
-      </style>
-      <h1>Liste des visites médicales</h1>
-      <p>Exporté le ${new Date().toLocaleDateString("fr-FR")} · ${filteredVisits.length} visite(s)</p>
-      <table>
-        <thead><tr>
-          <th>Référence</th><th>Travailleur</th><th>Matricule</th><th>Date</th>
-          <th>Type</th><th>Médecin</th><th>Aptitude</th><th>Prochaine visite</th><th>Statut</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-
+    const rows = filteredVisits.map((v) => { const wk = workerObj(v.workerId); return `<tr><td>${v.ref ?? "—"}</td><td>${workerName(v.workerId)}</td><td>${wk?.matricule ?? "—"}</td><td>${v.date}</td><td>${v.type}</td><td>${v.doctor ?? "—"}</td><td>${v.aptitude}</td><td>${v.closed ? "Terminée" : "Ouverte"}</td></tr>`; }).join("");
+    const html = `<style>body{font-family:Arial,sans-serif;font-size:11px;color:#1e293b}h1{font-size:16px;font-weight:800;color:#0F4C81;margin-bottom:4px}p{font-size:11px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0}td{padding:7px 10px;border-bottom:1px solid #f1f5f9}@page{margin:14mm 12mm}</style><h1>Liste des consultations</h1><p>Exporté le ${new Date().toLocaleDateString("fr-FR")} · ${filteredVisits.length} consultation(s)</p><table><thead><tr><th>Référence</th><th>Employé</th><th>Matricule</th><th>Date</th><th>Type</th><th>Médecin</th><th>Aptitude</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table>`;
     const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      setTimeout(() => { win.print(); win.close(); }, 500);
-    }
+    if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => { win.print(); win.close(); }, 500); }
   };
+
+  const kpiCards = [
+    { label: "Aujourd'hui", value: kpi.today, icon: CalendarClock, barClass: "bg-brand-vibrant", bar: kpi.today > 0 ? 100 : 8 },
+    { label: "Cette semaine", value: kpi.week, icon: Calendar, barClass: "bg-brand-deep", bar: 64 },
+    { label: "Consultations ouvertes", value: kpi.open, icon: Activity, barClass: "bg-warning", bar: kpi.total ? Math.round((kpi.open / kpi.total) * 100) : 0 },
+    { label: "Total consultations", value: kpi.total, icon: CalendarCheck, barClass: "bg-success", bar: 100 },
+  ];
+  const subCards = [
+    { label: "Visites d'embauche", value: kpi.embauche },
+    { label: "Visites périodiques", value: kpi.periodique },
+    { label: "Visites de reprise", value: kpi.reprise },
+  ];
 
   return (
     <>
-      {showModal && (
-        <WorkerSelectModal
-          workers={workers}
-          onSelect={(w) => { setShowModal(false); onNewVisitForWorker(w); }}
-          onClose={() => setShowModal(false)}
-        />
-      )}
+      {showModal && <WorkerSelectModal workers={workers} onSelect={(w) => { setShowModal(false); onNewVisitForWorker(w); }} onClose={() => setShowModal(false)} />}
 
-      <div className="flex h-screen overflow-hidden bg-slate-50">
+      <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar currentPage={currentPage} onNavigate={onNavigate} onLogout={onLogout} userName={userName} userRole={userRole} userPhoto={userPhoto} isSuperAdmin={isSuperAdmin} permissions={permissions} />
 
         <div className="flex flex-1 flex-col overflow-hidden">
-          <AppHeader title="Visites médicales" onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
+          <AppHeader onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={(vid, wid) => { const v = allVisits.find((x) => x.id === vid); const w = workerObj(wid); if (v) onOpenVisit(v, w ?? ({ id: wid } as Worker)); }} />
 
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="rounded-2xl bg-white shadow-sm overflow-hidden">
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto max-w-[1400px] p-6 lg:p-8">
+
+              {/* En-tête */}
+              <div className="mb-8">
+                <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Consultations</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Planning des visites médicales et suivi des examens cliniques.</p>
+              </div>
+
+              {/* KPI */}
+              <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                {kpiCards.map((k) => {
+                  const Icon = k.icon;
+                  return (
+                    <div key={k.label} className="rounded-xl border border-border bg-surface p-5 shadow-card">
+                      <div className="flex items-start justify-between">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</p>
+                        <Icon className="size-4 text-muted-foreground/70" strokeWidth={1.75} />
+                      </div>
+                      <div className="mt-3 font-display text-[26px] font-bold leading-none tracking-tight text-foreground tabular-nums">{k.value}</div>
+                      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted">
+                        <div className={`h-full rounded-full ${k.barClass}`} style={{ width: `${Math.min(Math.max(k.bar, 0), 100)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Sous-cartes par type */}
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {subCards.map((s) => (
+                  <div key={s.label} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
+                    <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Stethoscope className="size-5" strokeWidth={1.75} /></div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">{s.label}</p>
+                      <p className="font-display text-xl font-bold tabular-nums text-foreground">{s.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {/* Barre d'outils */}
-              <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-6 py-4">
-                {/* Recherche par référence / travailleur / médecin */}
-                <div className="relative flex-1 min-w-[220px]">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Icon d={icons.search} size={14} />
-                  </span>
-                  <input
-                    type="text"
-                    value={visitSearch}
-                    onChange={(e) => setVisitSearch(e.target.value)}
-                    placeholder="Rechercher par référence, travailleur, médecin…"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20"
-                  />
-                  {visitSearch && (
-                    <button onClick={() => setVisitSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
-                  )}
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="relative min-w-[240px] flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <input value={visitSearch} onChange={(e) => setVisitSearch(e.target.value)} placeholder="N° de consultation, employé, médecin…"
+                    className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15" />
                 </div>
-                <p className="text-xs text-slate-400 whitespace-nowrap">
-                  <span className="font-bold text-medwork-navy">{filteredVisits.length}</span>{" "}
-                  visite{filteredVisits.length > 1 ? "s" : ""}
-                  {visitSearch && ` sur ${sorted.length}`}
-                </p>
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary/40">
+                  <option value="Tous">Tous les types</option>
+                  <option value="embauche">Embauche</option>
+                  <option value="périodique">Périodique</option>
+                  <option value="reprise">Reprise</option>
+                  <option value="surveillance">Surveillance renforcée</option>
+                </select>
                 <ExportDropdown onPDF={handlePDFExport} onExcel={handleExcelExport} />
                 {can("visits.create") && (
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="ml-auto flex items-center gap-2 rounded-xl bg-medwork-cyan px-4 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-900/20 transition hover:opacity-90"
-                  >
-                    <Icon d={icons.plus} size={15} />
-                    Nouvelle visite
+                  <button onClick={() => setShowModal(true)} className="flex h-9 items-center gap-2 rounded-md bg-brand-deep px-3 text-xs font-semibold text-white transition hover:bg-brand-deep/90">
+                    <Plus className="size-4" /> Planifier une visite
                   </button>
                 )}
               </div>
 
               {/* Tableau */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="bg-slate-50 text-left">
-                      {["Référence", "Travailleur", "Matricule", "Date", "Type de visite", "Médecin", "Aptitude", "Statut", "Actions"].map((h) => (
-                        <th key={h} className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredVisits.length > 0 ? (
-                      filteredVisits.map((visit) => {
+              <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-6 py-3 text-left font-semibold">Référence</th>
+                        <th className="px-6 py-3 text-left font-semibold">Employé</th>
+                        <th className="px-6 py-3 text-left font-semibold">Type</th>
+                        <th className="px-6 py-3 text-left font-semibold">Date</th>
+                        <th className="px-6 py-3 text-left font-semibold">Médecin</th>
+                        <th className="px-6 py-3 text-left font-semibold">Statut</th>
+                        <th className="px-6 py-3 text-right font-semibold"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filteredVisits.length > 0 ? filteredVisits.map((visit) => {
                         const wk = workerObj(visit.workerId);
-                        const dot = getAptitudeDot(visit.aptitude);
-                        const badge = getAptitudeBadge(visit.aptitude);
+                        const openVisit = () => onOpenVisit(visit, wk ?? ({ id: visit.workerId, name: "", matricule: "", department: "", position: "", company: "", residence: "", contractStatus: "actif", status: "", lastVisit: "" } as Worker));
                         return (
-                          <tr
-                            key={visit.id}
-                            className="cursor-pointer text-sm transition hover:bg-cyan-50/40"
-                            onClick={() => {
-                              // Priorité 1 : worker trouvé → navigation directe vers la visite
-                              if (wk) {
-                                onOpenVisit(visit, wk);
-                              } else {
-                                // Priorité 2 : worker non chargé → App.tsx trouvera le worker via workerId
-                                onOpenVisit({ ...visit } as WorkerVisit, { id: visit.workerId, name: "", matricule: "", department: "", position: "", company: "", residence: "", contractStatus: "actif", status: "", lastVisit: "" } as Worker);
-                              }
-                            }}
-                          >
-                            {/* Référence */}
-                            <td className="px-5 py-3.5">
-                              {visit.ref
-                                ? <span className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-mono font-semibold text-slate-600 ring-1 ring-slate-200">{visit.ref}</span>
-                                : <span className="text-[10px] text-slate-400">—</span>}
+                          <tr key={visit.id} onClick={openVisit} className="cursor-pointer transition-colors hover:bg-accent">
+                            <td className="px-6 py-3.5">
+                              {visit.ref ? <span className="rounded bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">{visit.ref}</span> : <span className="text-muted-foreground">—</span>}
                             </td>
-                            {/* Travailleur */}
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-medwork-navy text-[10px] font-bold text-white">
-                                  {workerName(visit.workerId).split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()}
-                                </span>
-                                <span className="font-semibold text-medwork-navy">
-                                  {workerName(visit.workerId)}
-                                </span>
+                            <td className="px-6 py-3.5">
+                              <div className="flex items-center gap-3">
+                                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-deep to-brand-vibrant text-[11px] font-bold text-white">{initialsOf(workerName(visit.workerId))}</span>
+                                <div className="min-w-0">
+                                  <p className="truncate font-medium text-foreground">{workerName(visit.workerId)}</p>
+                                  <p className="truncate text-[11px] text-muted-foreground">{workerCompany(visit.workerId)}</p>
+                                </div>
                               </div>
                             </td>
-                            <td className="px-5 py-3.5 font-mono text-xs text-slate-500">
-                              {wk?.matricule ?? "—"}
+                            <td className="px-6 py-3.5"><span className="inline-flex rounded bg-brand-vibrant/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-vibrant">{visit.type}</span></td>
+                            <td className="px-6 py-3.5">
+                              <span className="inline-flex items-center gap-1.5 tabular-nums text-muted-foreground"><Calendar className="size-3.5" />{visit.date}</span>
                             </td>
-                            <td className="px-5 py-3.5 text-slate-700 font-medium">{visit.date}</td>
-                            <td className="px-5 py-3.5 text-slate-600">{visit.type}</td>
-                            <td className="px-5 py-3.5 text-slate-600">{visit.doctor || "—"}</td>
-                            <td className="px-5 py-3.5">
-                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${badge}`}>
-                                <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-                                {visit.aptitude}
-                              </span>
+                            <td className="px-6 py-3.5 text-muted-foreground">{visit.doctor || "—"}</td>
+                            <td className="px-6 py-3.5">
+                              {visit.closed
+                                ? <span className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-success/10 text-success"><span className="size-1.5 rounded-full bg-success" />Terminée</span>
+                                : <span className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-brand-vibrant/10 text-brand-vibrant"><span className="size-1.5 rounded-full bg-brand-vibrant" />Ouverte</span>}
                             </td>
-                            <td className="px-5 py-3.5">
-                              {visit.closed ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-                                  🔒 Clôturée
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-medwork-cyan ring-1 ring-inset ring-cyan-200">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-medwork-cyan" />
-                                  Ouverte
-                                </span>
+                            <td className="px-6 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                              {!visit.closed && can("visits.edit") && (
+                                <button onClick={() => { const w = wk ?? workers.find((x) => x.id === visit.workerId); if (w) onEditVisit(visit, w); }} title="Modifier" className="grid size-7 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground ml-auto">
+                                  <Pencil className="size-3.5" />
+                                </button>
                               )}
-                            </td>
-                            <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center gap-1.5">
-                                {!visit.closed && can("visits.edit") && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const worker = wk ?? workers.find((w) => w.id === visit.workerId);
-                                      if (worker) onEditVisit(visit, worker);
-                                    }}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm transition hover:border-amber-500 hover:bg-amber-500 hover:text-white"
-                                  >
-                                    ✏️ Modifier
-                                  </button>
-                                )}
-                              </div>
                             </td>
                           </tr>
                         );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={9} className="px-5 py-16 text-center">
-                          <p className="text-3xl mb-2">📋</p>
-                          <p className="font-semibold text-slate-600">Aucune visite enregistrée</p>
-                          <p className="mt-1 text-sm text-slate-400">
-                            Cliquez sur "Nouvelle visite" pour créer la première.
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      }) : (
+                        <tr><td colSpan={7} className="px-6 py-16 text-center">
+                          <p className="font-semibold text-foreground">Aucune consultation enregistrée</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Cliquez sur « Planifier une visite » pour créer la première.</p>
+                        </td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
             </div>
           </main>
         </div>
