@@ -62,10 +62,10 @@ export default function WorkerFormPage({
   };
 
   const isEdit = !!workerToEdit;
-  const title = isEdit ? "Modifier la fiche travailleur" : "Nouveau travailleur";
+  const title = isEdit ? "Modifier la fiche employé" : "Nouvel employé";
 
-  const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20";
-  const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400";
+  const inp = "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15";
+  const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
   const fields = [
     { name: "name",       label: "Nom complet *",    placeholder: "Ex: Mamadou Diallo" },
@@ -78,7 +78,7 @@ export default function WorkerFormPage({
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar
         currentPage="workerForm"
         onNavigate={onNavigate}
@@ -96,8 +96,8 @@ export default function WorkerFormPage({
           left={
             <button
               onClick={onBack}
-              title="Retour aux travailleurs"
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-medwork-cyan hover:text-medwork-cyan"
+              title="Retour aux employés"
+              className="grid h-8 w-8 place-items-center rounded-md border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <Icon d={icons.arrowLeft} size={15} />
             </button>
@@ -113,9 +113,9 @@ export default function WorkerFormPage({
           <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-6">
 
             {/* Informations personnelles */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
-                Informations du travailleur
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
+              <h3 className="mb-4 font-display font-bold text-foreground">
+                Informations de l'employé
               </h3>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {fields.map(({ name, label, placeholder }) => (
@@ -142,17 +142,16 @@ export default function WorkerFormPage({
               </div>
 
               {/* Info : statut automatique */}
-              <div className="mt-4 flex items-start gap-3 rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3">
-                <span className="mt-0.5 text-medwork-cyan">ℹ️</span>
-                <p className="text-xs text-cyan-800">
-                  Le <strong>statut médical</strong> est calculé automatiquement à partir de l'aptitude de la dernière visite médicale enregistrée. Il n'est pas modifiable ici.
+              <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+                <p className="text-xs text-muted-foreground">
+                  Le <strong className="text-foreground">statut médical</strong> est calculé automatiquement à partir de l'aptitude de la dernière consultation enregistrée. Il n'est pas modifiable ici.
                 </p>
               </div>
             </div>
 
             {/* Aperçu du statut */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
+              <h3 className="mb-3 font-display font-bold text-foreground">
                 Aperçu de la fiche
               </h3>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -164,14 +163,14 @@ export default function WorkerFormPage({
                   ["Poste",         formData.position   || "—"],
                   ["Résidence",     formData.residence  || "—"],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl bg-slate-50 p-3.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">{value}</p>
+                  <div key={label} className="rounded-xl bg-muted/50 p-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
                   </div>
                 ))}
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Statut médical</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-400 italic">Calculé depuis les visites</p>
+                <div className="rounded-xl border border-dashed border-border bg-muted/50 p-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Statut médical</p>
+                  <p className="mt-1 text-sm font-semibold italic text-muted-foreground">Calculé depuis les consultations</p>
                 </div>
               </div>
             </div>
@@ -180,14 +179,14 @@ export default function WorkerFormPage({
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                className="rounded-xl bg-medwork-cyan px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 shadow-md shadow-cyan-900/20"
+                className="rounded-md bg-brand-deep px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-deep/90"
               >
-                {isEdit ? "Enregistrer les modifications" : "Créer le travailleur"}
+                {isEdit ? "Enregistrer les modifications" : "Créer l'employé"}
               </button>
               <button
                 type="button"
                 onClick={onBack}
-                className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                className="rounded-md border border-border px-6 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
               >
                 Annuler
               </button>

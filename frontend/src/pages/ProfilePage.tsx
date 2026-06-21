@@ -118,8 +118,8 @@ export default function ProfilePage({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const role = roles.find((r) => r.id === currentUser?.roleId);
-  const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20";
-  const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400";
+  const inp = "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15";
+  const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +169,7 @@ export default function ProfilePage({
   const isAdmin = isSuperAdmin ?? currentUser?.isSuperAdmin ?? false;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar
         currentPage={currentPage}
         onNavigate={onNavigate}
@@ -182,35 +182,40 @@ export default function ProfilePage({
       />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader title="Mon profil" onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
+        <AppHeader onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-2xl space-y-5">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-2xl space-y-5 p-6 lg:p-8">
+
+            <div className="mb-2">
+              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Mon profil</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Gérez vos informations personnelles et votre mot de passe.</p>
+            </div>
 
             {/* ── Carte identité ── */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-5 border-b border-slate-100 pb-5 mb-5">
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
+              <div className="flex items-center gap-5 border-b border-border pb-5 mb-5">
                 {/* Avatar */}
                 <div className="relative">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white ring-4 ring-slate-100 overflow-hidden
-                    ${isAdmin ? "bg-gradient-to-br from-yellow-500 to-amber-600" : "bg-medwork-navy"}`}>
-                    {userPhoto ? <img src={userPhoto} alt="Photo" className="h-full w-full object-cover" /> : (isAdmin ? "⭐" : initials)}
+                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white ring-4 ring-border overflow-hidden
+                    ${isAdmin ? "bg-gradient-to-br from-amber-400 to-amber-600" : "bg-gradient-to-br from-brand-deep to-brand-vibrant"}`}>
+                    {userPhoto ? <img src={userPhoto} alt="Photo" className="h-full w-full object-cover" /> : initials}
                   </div>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-medwork-navy">{currentUser?.name}</p>
+                  <p className="font-display text-lg font-bold text-foreground">{currentUser?.name}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     {isAdmin ? (
-                      <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 ring-1 ring-amber-300">⭐ Administrateur suprême</span>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">Administrateur suprême</span>
                     ) : role ? (
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${roleBadgeClass(role.color)}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${roleDotClass(role.color)}`} />
                         {role.name}
                       </span>
                     ) : userRole ? (
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{userRole}</span>
+                      <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{userRole}</span>
                     ) : null}
-                    <span className="text-xs text-slate-400 font-mono">{currentUser?.matricule}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{currentUser?.matricule}</span>
                   </div>
                 </div>
               </div>
@@ -244,8 +249,8 @@ export default function ProfilePage({
                 </div>
 
                 {/* Changement mot de passe */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Changer le mot de passe</p>
+                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Changer le mot de passe</p>
                   <div>
                     <label className={lbl}>Mot de passe actuel</label>
                     <input type={showPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Requis pour changer de mot de passe" autoComplete="current-password" className={inp} />
@@ -268,19 +273,15 @@ export default function ProfilePage({
                 </div>
 
                 {error && (
-                  <p className="flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200">
-                    <span className="text-base">⚠️</span> {error}
-                  </p>
+                  <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm font-medium text-danger ring-1 ring-danger/20">{error}</p>
                 )}
 
                 <div className="flex items-center gap-3">
-                  <button type="submit" disabled={saving} className="rounded-xl bg-medwork-cyan px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-cyan-900/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="submit" disabled={saving} className="rounded-md bg-brand-deep px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-deep/90 disabled:cursor-not-allowed disabled:opacity-60">
                     {saving ? "Enregistrement…" : "Enregistrer les modifications"}
                   </button>
                   {saved && (
-                    <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
-                      <span className="text-base">✅</span> Modifications enregistrées
-                    </span>
+                    <span className="text-sm font-medium text-success">Modifications enregistrées</span>
                   )}
                 </div>
               </form>
@@ -289,18 +290,15 @@ export default function ProfilePage({
             {/* ── Signature(s) — admins seulement ── */}
             {/* ── Ma signature (lecture seule — gérée par l'admin dans Gestion des utilisateurs) ── */}
             {userSignature && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-lg">✍️</span>
-                  <p className="text-sm font-bold text-medwork-navy">Ma signature</p>
-                </div>
+              <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
+                <p className="mb-3 font-display font-bold text-foreground">Ma signature</p>
                 <div className="flex items-center gap-4">
-                  <div className="flex h-20 w-48 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
+                  <div className="flex h-20 w-48 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">
                     <img src={userSignature} alt="Signature" className="h-full w-full object-contain p-2" />
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     La signature est gérée par l'administrateur depuis la page{" "}
-                    <span className="font-semibold text-slate-600">Gestion des utilisateurs</span>.
+                    <span className="font-semibold text-foreground">Utilisateurs</span>.
                   </p>
                 </div>
               </div>
