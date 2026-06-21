@@ -30,7 +30,12 @@ function isAllowedOrigin(origin) {
   if (allowedOrigins.includes(origin)) return true;
   try {
     const host = new URL(origin).hostname;
-    return host.endsWith(".vercel.app") || host.endsWith(".lovable.app");
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".vercel.app") ||
+      host.endsWith(".lovable.app")
+    );
   } catch {
     return false;
   }
