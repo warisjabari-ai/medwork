@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar, AppHeader, Icon, icons } from "../components/Navigation";
 import type { AppPage } from "../components/Navigation";
+import { Pencil, Trash2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1036,9 +1037,9 @@ export default function VisitTypesPage({
                             </div>
                           </div>
 
-                          <div className="flex shrink-0 items-center gap-2">
-                            <button onClick={() => setEditingId(vt.id)} className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm transition hover:border-amber-500 hover:bg-amber-500 hover:text-white">✏️ Modifier</button>
-                            <button onClick={() => handleDelete(vt.id)} className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-500 shadow-sm transition hover:border-red-500 hover:bg-red-500 hover:text-white">🗑️ Supprimer</button>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button onClick={() => setEditingId(vt.id)} title="Modifier" className="grid size-8 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"><Pencil className="size-4" /></button>
+                            <button onClick={() => handleDelete(vt.id)} title="Supprimer" className="grid size-8 place-items-center rounded-md text-muted-foreground transition hover:bg-danger/10 hover:text-danger"><Trash2 className="size-4" /></button>
                           </div>
                         </div>
                       )}

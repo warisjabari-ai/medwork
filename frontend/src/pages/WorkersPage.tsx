@@ -112,7 +112,6 @@ export default function WorkersPage({
   permissions = [], searchData, onOpenWorker, onOpenVisit,
 }: Props) {
   const [search, setSearch] = useState("");
-  const [companyFilter, setCompanyFilter] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [riskFilter, setRiskFilter] = useState("");
   const [aptFilter, setAptFilter] = useState("");
@@ -143,20 +142,18 @@ export default function WorkersPage({
     };
   }, [workers]);
 
-  const companies = useMemo(() => [...new Set(workers.map((w) => w.company).filter(Boolean))].sort(), [workers]);
   const positions = useMemo(() => [...new Set(workers.map((w) => w.position).filter(Boolean))].sort(), [workers]);
 
   const filteredWorkers = useMemo(() => {
     const q = norm(search);
     return workers.filter((w) => {
       const matchesSearch = !q || norm(w.name).includes(q) || norm(w.matricule).includes(q) || norm(w.department).includes(q) || norm(w.company).includes(q) || norm(w.position).includes(q);
-      const matchesCompany = !companyFilter || w.company === companyFilter;
       const matchesPosition = !positionFilter || w.position === positionFilter;
       const matchesRisk = !riskFilter || (w.riskLevel ?? "Modéré") === riskFilter;
       const matchesApt = !aptFilter || aptKind(w.status) === aptFilter;
-      return matchesSearch && matchesCompany && matchesPosition && matchesRisk && matchesApt;
+      return matchesSearch && matchesPosition && matchesRisk && matchesApt;
     });
-  }, [workers, search, companyFilter, positionFilter, riskFilter, aptFilter]);
+  }, [workers, search, positionFilter, riskFilter, aptFilter]);
 
   const handleExcelExport = () => {
     const header = ["Nom", "Matricule", "Entreprise", "Département", "Poste", "Aptitude", "Contrat", "Dernière visite"];
@@ -220,7 +217,6 @@ export default function WorkersPage({
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom, matricule, entreprise…"
                   className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15" />
               </div>
-              <FilterSelect value={companyFilter} onChange={setCompanyFilter} allLabel="Entreprise" options={companies.map((c) => ({ value: c, label: c }))} />
               <FilterSelect value={positionFilter} onChange={setPositionFilter} allLabel="Poste" options={positions.map((p) => ({ value: p, label: p }))} />
               <FilterSelect value={riskFilter} onChange={setRiskFilter} allLabel="Niveau de risque" options={[{ value: "Élevé", label: "Élevé" }, { value: "Modéré", label: "Modéré" }, { value: "Faible", label: "Faible" }]} />
               <FilterSelect value={aptFilter} onChange={setAptFilter} allLabel="Aptitude" options={[{ value: "apte", label: "Apte" }, { value: "restriction", label: "Avec restriction" }, { value: "inapte", label: "Inapte" }]} />

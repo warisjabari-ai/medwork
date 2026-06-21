@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Sidebar, AppHeader, Icon, icons } from "../components/Navigation";
 import type { AppPage } from "../components/Navigation";
+import { Pencil, Trash2 } from "lucide-react";
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 export type ReferenceRange = {
@@ -395,15 +396,15 @@ export default function ExamTypesPage({
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1.5 justify-end">
                           {can("settings.examTypes") && (
-                            <button onClick={() => { setShowForm(false); setEditingId(et.id); }}
-                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-medwork-cyan hover:text-medwork-cyan transition">
-                              ✏️
+                            <button onClick={() => { setShowForm(false); setEditingId(et.id); }} title="Modifier"
+                              className="grid size-8 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground">
+                              <Pencil className="size-4" />
                             </button>
                           )}
                           {can("settings.examTypes") && (
-                            <button onClick={() => { if (window.confirm(`Supprimer l'examen « ${et.name} » ?`)) onDelete(et.id); }}
-                              className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-500 shadow-sm hover:bg-red-500 hover:text-white hover:border-red-500 transition">
-                              🗑️
+                            <button onClick={() => { if (window.confirm(`Supprimer l'examen « ${et.name} » ?`)) onDelete(et.id); }} title="Supprimer"
+                              className="grid size-8 place-items-center rounded-md text-muted-foreground transition hover:bg-danger/10 hover:text-danger">
+                              <Trash2 className="size-4" />
                             </button>
                           )}
                         </div>
