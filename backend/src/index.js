@@ -24,11 +24,23 @@ const envOrigins = (process.env.CORS_ORIGINS || "")
   .filter(Boolean);
 const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
+// Autorise aussi tout sous-domaine *.vercel.app (déploiements + previews Vercel)
+// et *.lovable.app (aperçu Lovable). L'API reste protégée par le token JWT.
+function isAllowedOrigin(origin) {
+  if (allowedOrigins.includes(origin)) return true;
+  try {
+    const host = new URL(origin).hostname;
+    return host.endsWith(".vercel.app") || host.endsWith(".lovable.app");
+  } catch {
+    return false;
+  }
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Requêtes sans origine (curl, apps mobiles, server-to-server) : autorisées
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (isAllowedOrigin(origin)) return callback(null, true);
     return callback(new Error(`Origine non autorisée par CORS : ${origin}`));
   },
   credentials: true,
