@@ -201,20 +201,31 @@ export default function DecisionsPage({
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar currentPage={currentPage} onNavigate={onNavigate} onLogout={onLogout} userName={userName} userRole={userRole} userPhoto={userPhoto} isSuperAdmin={isSuperAdmin} permissions={permissions} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader title="Décisions médicales" onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
+        <AppHeader onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-5">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-[1400px] space-y-5 p-6 lg:p-8">
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Décisions d'aptitude</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Définissez les décisions médicales (apte, restrictions, inaptitudes) et leurs couleurs.</p>
+            </div>
+            {!showAddForm && (
+              <button onClick={() => setShowAddForm(true)} className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-brand-deep px-3 text-xs font-semibold text-white transition hover:bg-brand-deep/90">
+                <Icon d={icons.plus} size={15} />Nouvelle décision
+              </button>
+            )}
+          </div>
 
           {/* Formulaire ajout */}
-          {showAddForm ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="mb-5 text-xs font-bold uppercase tracking-widest text-medwork-navy">
-                Nouvelle décision médicale
-              </p>
+          {showAddForm && (
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
+              <p className="mb-5 font-display font-bold text-foreground">Nouvelle décision d'aptitude</p>
               <DecisionForm
                 initial={{ label: "", color: "green", description: "", requiresRestriction: false }}
                 onSave={handleAdd}
@@ -222,23 +233,13 @@ export default function DecisionsPage({
                 submitLabel="Créer la décision"
               />
             </div>
-          ) : (
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 rounded-xl bg-medwork-cyan px-4 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-900/20 transition hover:opacity-90"
-              >
-                <Icon d={icons.plus} size={15} />
-                Nouvelle décision
-              </button>
-            </div>
           )}
 
           {/* Liste */}
-          <div className="rounded-2xl bg-white shadow-sm overflow-hidden">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <span className="font-bold text-medwork-navy">{decisions.length}</span>{" "}
+          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+            <div className="border-b border-border px-6 py-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <span className="font-bold text-foreground">{decisions.length}</span>{" "}
                 décision{decisions.length > 1 ? "s" : ""} enregistrée{decisions.length > 1 ? "s" : ""}
               </p>
             </div>
@@ -309,6 +310,7 @@ export default function DecisionsPage({
                 ))}
               </div>
             )}
+          </div>
           </div>
         </main>
       </div>

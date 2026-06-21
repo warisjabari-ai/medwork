@@ -284,27 +284,28 @@ export default function ExamTypesPage({
   const editingItem = editingId !== null ? examTypes.find((et) => et.id === editingId) : null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar currentPage={currentPage} onNavigate={onNavigate} onLogout={onLogout}
         userName={userName} userRole={userRole} userPhoto={userPhoto}
         isSuperAdmin={isSuperAdmin} permissions={permissions} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader title="Types d'examens biologiques" onNavigate={onNavigate}
+        <AppHeader onNavigate={onNavigate}
           searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin}
           onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-5">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-[1400px] space-y-5 p-6 lg:p-8">
 
-          {/* Bandeau : Ajouter */}
-          <div className="flex items-center justify-between">
+          {/* En-tête */}
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-medwork-navy">Examens biologiques</h2>
-              <p className="text-xs text-slate-400">{examTypes.length} examen{examTypes.length > 1 ? "s" : ""} configuré{examTypes.length > 1 ? "s" : ""}</p>
+              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Types d'examens</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{examTypes.length} examen{examTypes.length > 1 ? "s" : ""} biologique{examTypes.length > 1 ? "s" : ""} configuré{examTypes.length > 1 ? "s" : ""} · valeurs de référence et seuils.</p>
             </div>
             {can("settings.examTypes") && !showForm && !editingId && (
               <button onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 rounded-xl bg-medwork-cyan px-4 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-900/20 hover:opacity-90 transition">
+                className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-brand-deep px-3 text-xs font-semibold text-white transition hover:bg-brand-deep/90">
                 <Icon d={icons.plus} size={15} />
                 Nouvel examen
               </button>
@@ -313,8 +314,8 @@ export default function ExamTypesPage({
 
           {/* Formulaire création */}
           {showForm && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-5 text-xs font-bold uppercase tracking-widest text-medwork-navy">Nouvel examen biologique</h3>
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
+              <h3 className="mb-5 font-display font-bold text-foreground">Nouvel examen biologique</h3>
               <ExamTypeForm
                 initial={emptyForm()}
                 onSave={(data) => { onAdd(data); setShowForm(false); }}
@@ -413,6 +414,7 @@ export default function ExamTypesPage({
               </table>
             </div>
           )}
+          </div>
         </main>
       </div>
     </div>
