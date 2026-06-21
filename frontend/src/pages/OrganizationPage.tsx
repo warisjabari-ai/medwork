@@ -18,8 +18,8 @@ type Props = {
   onOpenVisit?: (v: any, w: any) => void;
 };
 
-const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-medwork-cyan focus:bg-white focus:ring-2 focus:ring-medwork-cyan/20";
-const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400";
+const inp = "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15";
+const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
 export default function OrganizationPage({
   currentPage, onNavigate, onLogout, userName, userRole, userPhoto,
@@ -71,7 +71,7 @@ export default function OrganizationPage({
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar
         currentPage={currentPage}
         onNavigate={onNavigate}
@@ -84,14 +84,19 @@ export default function OrganizationPage({
       />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader title="Organisation" onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
+        <AppHeader onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-2xl space-y-5">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-2xl p-6 lg:p-8">
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-lg font-bold text-medwork-navy">Identité de l'organisation</p>
-              <p className="mt-1 text-sm text-slate-500">
+            <div className="mb-8">
+              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Organisation</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Identité de votre service de santé : nom, logo et couleur, appliqués partout dans l'application.</p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-card">
+              <p className="font-display font-bold text-foreground">Identité de l'organisation</p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Ces informations apparaissent sur la page de connexion, la barre latérale et les documents imprimés.
               </p>
 
@@ -100,19 +105,19 @@ export default function OrganizationPage({
                 <div>
                   <p className={lbl}>Logo</p>
                   <div className="flex items-center gap-5">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl text-white text-2xl font-black overflow-hidden ring-4 ring-slate-100" style={{ background: primaryColor }}>
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl text-white text-2xl font-black overflow-hidden ring-4 ring-border" style={{ background: primaryColor }}>
                       {logo ? <img src={logo} alt="Logo" className="h-full w-full object-contain p-1.5" /> : (name || "M").charAt(0).toUpperCase()}
                     </div>
                     <div className="flex flex-col gap-2">
-                      <button type="button" onClick={() => fileRef.current?.click()} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600 hover:border-medwork-cyan hover:bg-cyan-50/40">
+                      <button type="button" onClick={() => fileRef.current?.click()} className="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted">
                         Choisir une image…
                       </button>
                       {logo && (
-                        <button type="button" onClick={() => setLogo(null)} className="text-xs text-red-400 hover:text-red-600 hover:underline text-left">
+                        <button type="button" onClick={() => setLogo(null)} className="text-left text-xs text-danger hover:underline">
                           Retirer le logo
                         </button>
                       )}
-                      <p className="text-[11px] text-slate-400">PNG ou JPG, moins de 1 Mo.</p>
+                      <p className="text-[11px] text-muted-foreground">PNG ou JPG, moins de 1 Mo.</p>
                     </div>
                   </div>
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoFile(f); }} />
@@ -131,7 +136,7 @@ export default function OrganizationPage({
                 <div>
                   <label className={lbl}>Couleur principale</label>
                   <div className="flex items-center gap-3">
-                    <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-200 bg-white p-1" />
+                    <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border border-border bg-surface p-1" />
                     <input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className={inp + " max-w-[140px]"} />
                   </div>
                 </div>
@@ -147,13 +152,13 @@ export default function OrganizationPage({
                   </div>
                 </div>
 
-                {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 ring-1 ring-red-200">{error}</p>}
+                {error && <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger ring-1 ring-danger/20">{error}</p>}
 
                 <div className="flex items-center gap-3 pt-2">
-                  <button type="submit" disabled={saving} className="rounded-xl bg-medwork-cyan px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-medwork-cyan/90 disabled:opacity-60">
+                  <button type="submit" disabled={saving} className="rounded-md bg-brand-deep px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-deep/90 disabled:opacity-60">
                     {saving ? "Enregistrement…" : "Enregistrer"}
                   </button>
-                  {saved && <span className="flex items-center gap-1.5 text-sm font-medium text-green-600"><span className="text-base">✅</span> Modifications enregistrées</span>}
+                  {saved && <span className="flex items-center gap-1.5 text-sm font-medium text-success">Modifications enregistrées</span>}
                 </div>
               </form>
             </div>
