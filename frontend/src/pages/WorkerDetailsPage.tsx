@@ -1942,14 +1942,14 @@ export default function WorkerDetailsPage({ worker, currentPage, onNavigate, onL
   };
 
   if (!worker) {
-    return <div className="flex h-screen items-center justify-center bg-slate-50"><button onClick={() => onNavigate("workers")} className="rounded-xl bg-medwork-cyan px-4 py-2 text-white">← Retour aux travailleurs</button></div>;
+    return <div className="flex h-screen items-center justify-center bg-background"><button onClick={() => onNavigate("workers")} className="rounded-md bg-brand-deep px-4 py-2 text-sm font-semibold text-white">← Retour aux employés</button></div>;
   }
 
   const initials = worker.name.split(" ").map((p) => p[0]).join("").slice(0, 2);
   const { badge: workerBadge, dot: workerDot } = getStatusStyle(worker.status);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar currentPage={currentPage} onNavigate={onNavigate} onLogout={onLogout} userName={userName} userRole={userRole} userPhoto={userPhoto} isSuperAdmin={isSuperAdmin} permissions={permissions} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -1960,8 +1960,8 @@ export default function WorkerDetailsPage({ worker, currentPage, onNavigate, onL
           left={
             <button
               onClick={() => onNavigate("workers")}
-              title="Retour aux travailleurs"
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-medwork-cyan hover:text-medwork-cyan"
+              title="Retour aux employés"
+              className="grid h-8 w-8 place-items-center rounded-md border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <Icon d={icons.arrowLeft} size={15} />
             </button>
