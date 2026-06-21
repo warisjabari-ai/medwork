@@ -986,13 +986,18 @@ export default function ReportsPage({
   const [activeReport, setActiveReport] = useState<ReportId>("prescriptions");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar currentPage={currentPage} onNavigate={onNavigate} onLogout={onLogout}
         userName={userName} userRole={userRole} userPhoto={userPhoto} isSuperAdmin={isSuperAdmin} permissions={permissions} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader title="Rapports" onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
+        <AppHeader onNavigate={onNavigate} searchData={searchData} permissions={permissions} isSuperAdmin={isSuperAdmin} onOpenWorker={onOpenWorker} onOpenVisit={onOpenVisit} />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-[1400px] space-y-6 p-6 lg:p-8">
+          <div>
+            <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-foreground">Rapports &amp; analyses</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Générez des rapports réglementaires, statistiques et tableaux de bord.</p>
+          </div>
           {/* Grille de cartes */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {REPORT_CARDS.map((card) => (
@@ -1012,10 +1017,10 @@ export default function ReportsPage({
           <div className="flex items-center gap-3">
             <span className="text-2xl">{REPORT_CARDS.find((c) => c.id === activeReport)?.icon}</span>
             <div>
-              <h2 className="text-base font-bold text-medwork-navy">
+              <h2 className="font-display text-base font-bold text-foreground">
                 {REPORT_CARDS.find((c) => c.id === activeReport)?.title}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 {REPORT_CARDS.find((c) => c.id === activeReport)?.description}
               </p>
             </div>
@@ -1034,6 +1039,7 @@ export default function ReportsPage({
           {activeReport === "workers" && (
             <WorkersReport workers={workers} allVisits={allVisits} decisions={decisions} />
           )}
+          </div>
         </main>
       </div>
     </div>
